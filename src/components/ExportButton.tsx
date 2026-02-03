@@ -2,13 +2,13 @@
 
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
-import { PaddingTokens } from "@/app/page";
+import { DesignTokens } from "@/types/tokens";
 
 interface ExportButtonProps {
-  padding: PaddingTokens;
+  tokens: DesignTokens;
 }
 
-export function ExportButton({ padding }: ExportButtonProps) {
+export function ExportButton({ tokens }: ExportButtonProps) {
   const handleExport = () => {
     const configContent = `/** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -17,10 +17,27 @@ module.exports = {
   ],
   theme: {
     extend: {
-      padding: {
-        'small': '${padding.small}px',
-        'medium': '${padding.medium}px',
-        'large': '${padding.large}px',
+      colors: {
+        primary: '${tokens.colors.primary}',
+        secondary: '${tokens.colors.secondary}',
+        background: '${tokens.colors.background}',
+        text: '${tokens.colors.text}',
+      },
+      spacing: {
+        'small': '${tokens.spacing.small}px',
+        'medium': '${tokens.spacing.medium}px',
+        'large': '${tokens.spacing.large}px',
+        'container': '${tokens.spacing.container}px',
+      },
+      fontSize: {
+        'h1': '${tokens.typography.h1}px',
+        'h2': '${tokens.typography.h2}px',
+        'body': '${tokens.typography.body}px',
+      },
+      borderRadius: {
+        'small': '${tokens.borderRadius.small}px',
+        'medium': '${tokens.borderRadius.medium}px',
+        'large': '${tokens.borderRadius.large}px',
       }
     },
   },
