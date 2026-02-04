@@ -1,37 +1,30 @@
 import { memo } from "react";
-import { DesignTokens } from "@/types/tokens";
 import { Hero } from "./Hero";
 import { Features } from "./Features";
 import { Footer } from "./Footer";
+import { Button } from "@/components/ui/button";
 
-interface LandingPageProps {
-  tokens: DesignTokens;
-}
-
-export const LandingPage = memo(function LandingPage({ tokens }: LandingPageProps) {
+export const LandingPage = memo(function LandingPage() {
   return (
-    <div className="w-full h-full bg-white overflow-y-auto">
-       {/* Simple Navbar mock */}
-       <header
-         className="border-b"
-         style={{
-             padding: `${tokens.spacing.medium}px`,
-             borderColor: tokens.colors.secondary + "20" // 20 hex alpha
-         }}
-       >
-          <div className="container mx-auto flex justify-between items-center">
-            <span className="font-bold text-xl" style={{ color: tokens.colors.primary }}>Brand</span>
-            <nav className="hidden md:flex gap-6" style={{ fontSize: `${tokens.typography.body}px`, color: tokens.colors.text }}>
-                <a href="#">Product</a>
-                <a href="#">Solutions</a>
-                <a href="#">Pricing</a>
+    <div className="w-full h-full bg-background text-foreground overflow-y-auto font-sans">
+       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 border-border">
+          <div className="container mx-auto flex justify-between items-center h-16 px-4">
+            <span className="font-bold text-xl text-primary">Brand</span>
+            <nav className="hidden md:flex gap-6 text-sm font-medium text-muted-foreground">
+                <a href="#" className="hover:text-foreground transition-colors">Product</a>
+                <a href="#" className="hover:text-foreground transition-colors">Solutions</a>
+                <a href="#" className="hover:text-foreground transition-colors">Pricing</a>
             </nav>
+            <div className="flex gap-4">
+                <Button variant="ghost" size="sm">Log in</Button>
+                <Button size="sm">Sign up</Button>
+            </div>
           </div>
        </header>
 
-       <Hero tokens={tokens} />
-       <Features tokens={tokens} />
-       <Footer tokens={tokens} />
+       <Hero />
+       <Features />
+       <Footer />
     </div>
   );
 });

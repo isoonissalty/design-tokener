@@ -1,11 +1,6 @@
-import { DesignTokens } from "@/types/tokens";
 import { CheckCircle2, Zap, Layout, ArrowRight } from "lucide-react";
 
-interface SectionProps {
-  tokens: DesignTokens;
-}
-
-export function Features({ tokens }: SectionProps) {
+export function Features() {
   const features = [
     {
       icon: <Zap className="w-6 h-6" />,
@@ -25,82 +20,35 @@ export function Features({ tokens }: SectionProps) {
   ];
 
   return (
-    <section
-      style={{
-        paddingTop: `${tokens.spacing.container}px`,
-        paddingBottom: `${tokens.spacing.container}px`,
-        backgroundColor: "#f8fafc", // A slight offset from pure white usually
-        color: tokens.colors.text,
-      }}
-    >
+    <section className="py-24 bg-muted/50 text-foreground">
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="text-center mb-16">
-          <h2
-            style={{
-              fontSize: `${tokens.typography.h2}px`,
-              marginBottom: `${tokens.spacing.medium}px`,
-            }}
-            className="font-bold"
-          >
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Everything you need
           </h2>
-          <p
-            style={{
-              fontSize: `${tokens.typography.body}px`,
-              color: tokens.colors.secondary,
-            }}
-          >
+          <p className="text-muted-foreground text-lg">
             A complete toolkit for your design system
           </p>
         </div>
 
-        <div
-          className="grid md:grid-cols-3"
-          style={{ gap: `${tokens.spacing.large}px` }}
-        >
+        <div className="grid md:grid-cols-3 gap-8">
           {features.map((feature, i) => (
             <div
               key={i}
-              style={{
-                backgroundColor: tokens.colors.background,
-                padding: `${tokens.spacing.large}px`,
-                borderRadius: `${tokens.borderRadius.large}px`,
-              }}
-              className="shadow-sm border border-slate-100 flex flex-col items-start"
+              className="bg-card text-card-foreground p-8 rounded-lg shadow-sm border border-border flex flex-col items-start"
             >
-              <div
-                style={{
-                  color: tokens.colors.primary,
-                  marginBottom: `${tokens.spacing.medium}px`,
-                }}
-              >
+              <div className="text-primary mb-4">
                 {feature.icon}
               </div>
-              <h3
-                style={{
-                  fontSize: `${tokens.typography.body + 4}px`, // Slightly larger than body
-                  marginBottom: `${tokens.spacing.small}px`,
-                }}
-                className="font-semibold"
-              >
+              <h3 className="text-xl font-semibold mb-2">
                 {feature.title}
               </h3>
-              <p
-                style={{
-                  fontSize: `${tokens.typography.body}px`,
-                  color: tokens.colors.secondary,
-                  marginBottom: `${tokens.spacing.medium}px`,
-                }}
-              >
+              <p className="text-muted-foreground mb-4">
                 {feature.description}
               </p>
               <a
                 href="#"
-                className="inline-flex items-center mt-auto font-medium hover:underline"
-                style={{
-                    color: tokens.colors.primary,
-                    fontSize: `${tokens.typography.body}px`
-                }}
+                className="inline-flex items-center mt-auto font-medium text-primary hover:underline"
               >
                 Read more <ArrowRight className="w-4 h-4 ml-1" />
               </a>
