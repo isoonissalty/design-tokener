@@ -16,6 +16,9 @@ export default function Home() {
   const [buttonConfig, setButtonConfig] = useState<ButtonConfig>(defaultButtonConfig);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("tokens");
+  const [isPreviewDark, setIsPreviewDark] = useState(false);
+
+  const togglePreviewTheme = () => setIsPreviewDark(!isPreviewDark);
 
   return (
     <main className="h-screen flex flex-col bg-background text-foreground font-sans overflow-hidden">
@@ -61,8 +64,8 @@ export default function Home() {
             <section className="flex-1 bg-muted/20 relative overflow-hidden flex flex-col">
                 <div className="flex-1 overflow-auto p-8 flex items-start justify-center">
                      {/* We wrap the preview in ThemeWrapper */}
-                     <ThemeWrapper themeConfig={themeConfig} buttonConfig={buttonConfig} className="w-full max-w-5xl shadow-2xl rounded-xl overflow-hidden border bg-background ring-1 ring-slate-900/5 origin-top scale-90">
-                        <LandingPage />
+                     <ThemeWrapper themeConfig={themeConfig} buttonConfig={buttonConfig} className="w-full max-w-5xl shadow-2xl rounded-xl overflow-hidden border bg-background ring-1 ring-slate-900/5 origin-top scale-90 preview-root">
+                        <LandingPage isDark={isPreviewDark} toggleTheme={togglePreviewTheme} />
                      </ThemeWrapper>
                 </div>
             </section>
@@ -84,8 +87,8 @@ export default function Home() {
                         </Button>
                     </div>
                     <div className="flex-1 overflow-auto bg-gray-50">
-                        <ThemeWrapper themeConfig={themeConfig} buttonConfig={buttonConfig} className="min-h-full">
-                           <LandingPage />
+                        <ThemeWrapper themeConfig={themeConfig} buttonConfig={buttonConfig} className="min-h-full preview-root">
+                           <LandingPage isDark={isPreviewDark} toggleTheme={togglePreviewTheme} />
                         </ThemeWrapper>
                     </div>
                 </div>

@@ -45,7 +45,7 @@ export function ThemeWrapper({ themeConfig, buttonConfig, children, className }:
           ${radiusVar}
           ${btnVars}
         }
-        .dark {
+        .preview-root .dark {
           ${darkVars}
         }
 

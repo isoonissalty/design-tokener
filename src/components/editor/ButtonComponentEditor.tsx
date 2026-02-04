@@ -3,9 +3,7 @@
 import { ButtonConfig, ThemeConfig } from "@/types/theme";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // I need to verify if select exists, if not I use standard select
 import { Button } from "@/components/ui/button"; // Standard button
 import { ThemeWrapper } from "@/components/ThemeWrapper";
 
