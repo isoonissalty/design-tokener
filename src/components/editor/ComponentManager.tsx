@@ -1,26 +1,24 @@
 import { useState } from "react";
 import { ComponentList } from "./ComponentList";
 import { ButtonComponentEditor } from "./ButtonComponentEditor";
-import { ThemeConfig, ButtonConfig } from "@/types/theme";
+import { DesignTokenSystem } from "@/types/token-system";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
 interface ComponentManagerProps {
-  themeConfig: ThemeConfig;
-  buttonConfig: ButtonConfig;
-  onButtonConfigChange: (config: ButtonConfig) => void;
+  tokens: DesignTokenSystem;
+  onChange: (tokens: DesignTokenSystem) => void;
 }
 
-export function ComponentManager({ themeConfig, buttonConfig, onButtonConfigChange }: ComponentManagerProps) {
+export function ComponentManager({ tokens, onChange }: ComponentManagerProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   if (selectedId === "button") {
     return (
       <ButtonComponentEditor
-        themeConfig={themeConfig}
-        buttonConfig={buttonConfig}
-        onChange={onButtonConfigChange}
+        tokens={tokens}
+        onChange={onChange}
         onBack={() => setSelectedId(null)}
       />
     );

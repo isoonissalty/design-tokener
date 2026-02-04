@@ -2,50 +2,47 @@
 
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
-import { ThemeConfig, ButtonConfig } from "@/types/theme";
-import { hexToHsl } from "@/lib/colors";
+import { DesignTokenSystem } from "@/types/token-system";
+import { generateTokenCss } from "@/lib/css-generator";
 
 interface ExportButtonProps {
-  themeConfig: ThemeConfig;
-  buttonConfig: ButtonConfig;
+  tokens: DesignTokenSystem;
 }
 
-export function ExportButton({ themeConfig, buttonConfig }: ExportButtonProps) {
+export function ExportButton({ tokens }: ExportButtonProps) {
   const handleExport = () => {
     // 1. Generate CSS Content
-    const lightVars = Object.entries(themeConfig.light).map(([key, value]) => {
-        const cssVar = `--${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`;
-        return `    ${cssVar}: ${hexToHsl(value)};`;
-    }).join("\n");
-
-    const darkVars = Object.entries(themeConfig.dark).map(([key, value]) => {
-        const cssVar = `--${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`;
-        return `    ${cssVar}: ${hexToHsl(value)};`;
-    }).join("\n");
+    const { root, dark } = generateTokenCss(tokens);
 
     const cssContent = `@layer base {
   :root {
-${lightVars}
-    --radius: ${themeConfig.radius}rem;
+    ${root.join("\n    ")}
+
+    /* Mappings */
+    --background: var(--color-bg-canvas);
+    --foreground: var(--color-text-primary);
+    --card: var(--color-bg-surface);
+    --card-foreground: var(--color-text-primary);
+    --popover: var(--color-bg-surface);
+    --popover-foreground: var(--color-text-primary);
+    --primary: var(--color-intent-primary);
+    --primary-foreground: var(--color-text-inverse);
+    --secondary: var(--color-bg-subtle);
+    --secondary-foreground: var(--color-text-primary);
+    --muted: var(--color-bg-subtle);
+    --muted-foreground: var(--color-text-secondary);
+    --accent: var(--color-bg-subtle);
+    --accent-foreground: var(--color-text-primary);
+    --destructive: var(--color-intent-error);
+    --destructive-foreground: var(--color-text-inverse);
+    --border: var(--color-border-default);
+    --input: var(--color-border-default);
+    --ring: var(--color-border-focus);
+    --radius: var(--radius-md);
   }
 
   .dark {
-${darkVars}
-  }
-}
-
-@layer components {
-  /* Add this class to your buttons or update your base button component */
-  .btn-custom {
-    padding: ${buttonConfig.paddingY}px ${buttonConfig.paddingX}px;
-    border-radius: ${buttonConfig.borderRadius}rem;
-    font-size: ${buttonConfig.fontSize}px;
-    font-weight: ${buttonConfig.fontWeight};
-    text-transform: ${buttonConfig.textTransform};
-    box-shadow: ${buttonConfig.boxShadow === 'none' ? 'none' :
-                    buttonConfig.boxShadow === 'sm' ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' :
-                    buttonConfig.boxShadow === 'md' ? '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' :
-                    '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'};
+    ${dark.join("\n    ")}
   }
 }
 `;

@@ -1,27 +1,66 @@
 "use client";
 
-import { ButtonConfig, ThemeConfig } from "@/types/theme";
+import { DesignTokenSystem } from "@/types/token-system";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button"; // Standard button
 import { ThemeWrapper } from "@/components/ThemeWrapper";
 import { ArrowLeft } from "lucide-react";
 
 interface ButtonComponentEditorProps {
-  buttonConfig: ButtonConfig;
-  themeConfig: ThemeConfig;
-  onChange: (config: ButtonConfig) => void;
+  tokens: DesignTokenSystem;
+  onChange: (tokens: DesignTokenSystem) => void;
   onBack?: () => void;
 }
 
-export function ButtonComponentEditor({ buttonConfig, themeConfig, onChange, onBack }: ButtonComponentEditorProps) {
-  const update = (key: keyof ButtonConfig, value: string | number) => {
-    onChange({
-      ...buttonConfig,
-      [key]: value,
-    });
+export function ButtonComponentEditor({ tokens, onChange, onBack }: ButtonComponentEditorProps) {
+
+  const updateButtonToken = (path: string[], value: string) => {
+    // Deep clone
+    const newTokens = JSON.parse(JSON.stringify(tokens));
+
+    // Navigate to components.button
+    let current = newTokens.components.button;
+
+    // Navigate rest of path
+    for (let i = 0; i < path.length - 1; i++) {
+        current = current[path[i]];
+    }
+
+    current[path[path.length - 1]] = value;
+    onChange(newTokens);
   };
+
+  const TokenInput = ({ label, value, path, type = "text" }: { label: string, value: string, path: string[], type?: string }) => {
+     // Check if alias
+     const isAlias = value.startsWith("{");
+     const isColor = (type === "color" || /^#[0-9A-Fa-f]{6}$/.test(value)) && !isAlias;
+
+     return (
+        <div className="space-y-1">
+            <Label className="text-xs">{label}</Label>
+            <div className="flex gap-2">
+                 {isColor && (
+                    <Input
+                        type="color"
+                        value={value}
+                        onChange={(e) => updateButtonToken(path, e.target.value)}
+                        className="w-8 h-8 p-0 border-0 rounded-md cursor-pointer shrink-0"
+                    />
+                )}
+                <Input
+                    type="text"
+                    value={value}
+                    onChange={(e) => updateButtonToken(path, e.target.value)}
+                    className="h-8 text-xs font-mono"
+                />
+            </div>
+        </div>
+     );
+  };
+
+  const { button } = tokens.components;
 
   return (
     <div className="space-y-6 h-full flex flex-col">
@@ -41,15 +80,26 @@ export function ButtonComponentEditor({ buttonConfig, themeConfig, onChange, onB
         </CardHeader>
         <CardContent>
             {/* We use ThemeWrapper here to apply the styles to these buttons specifically */}
-            <ThemeWrapper themeConfig={themeConfig} buttonConfig={buttonConfig} className="p-6 border rounded-md bg-muted/30 flex flex-wrap gap-4 items-center justify-center min-h-[100px]">
+            <ThemeWrapper tokens={tokens} className="p-6 border rounded-md bg-muted/30 flex flex-wrap gap-4 items-center justify-center min-h-[100px] preview-root">
+                {/* Note: Standard Shadcn buttons might not pick up these variables unless we force them or they are mapped.
+                    Our ThemeWrapper mappings:
+                    --radius -> var(--radius-md)
+                    --primary -> var(--color-intent-primary)
+
+                    So standard buttons WILL pick up global semantic changes.
+                    But 'button.bg.default' is not mapped to Shadcn button automatically.
+
+                    For this preview, we can manually apply style?
+                    Or rely on the user to use the variables?
+
+                    Let's demonstrate the tokens by applying them inline to a raw button for clarity?
+                    Or just show standard buttons and let the user know global tokens affect them.
+                */}
                 <Button>Primary</Button>
                 <Button variant="secondary">Secondary</Button>
                 <Button variant="destructive">Destructive</Button>
                 <Button variant="outline">Outline</Button>
                 <Button variant="ghost">Ghost</Button>
-                <Button variant="link">Link</Button>
-                <Button size="sm">Small</Button>
-                <Button size="lg">Large</Button>
             </ThemeWrapper>
         </CardContent>
       </Card>
@@ -57,108 +107,64 @@ export function ButtonComponentEditor({ buttonConfig, themeConfig, onChange, onB
       {/* Editor Controls */}
       <div className="space-y-6 flex-1 overflow-y-auto pr-2">
         <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-muted-foreground">Dimensions</h4>
+            <h4 className="text-sm font-semibold text-muted-foreground">Background Colors</h4>
 
-            <div className="space-y-3">
-                <div className="flex justify-between">
-                    <Label>Horizontal Padding (px)</Label>
-                    <span className="text-xs text-muted-foreground">{buttonConfig.paddingX}px</span>
-                </div>
-                <Slider
-                    value={[buttonConfig.paddingX]}
-                    min={0}
-                    max={60}
-                    step={1}
-                    onValueChange={(vals) => update("paddingX", vals[0])}
-                />
+            {/* Default */}
+            <div className="space-y-2 border-l-2 pl-2">
+                 <Label className="text-sm font-semibold">Default</Label>
+                 <div className="grid grid-cols-2 gap-2">
+                     <TokenInput label="Light" value={button.bg.default.light} path={["bg", "default", "light"]} />
+                     <TokenInput label="Dark" value={button.bg.default.dark} path={["bg", "default", "dark"]} />
+                 </div>
             </div>
 
-            <div className="space-y-3">
-                <div className="flex justify-between">
-                    <Label>Vertical Padding (px)</Label>
-                    <span className="text-xs text-muted-foreground">{buttonConfig.paddingY}px</span>
-                </div>
-                <Slider
-                    value={[buttonConfig.paddingY]}
-                    min={0}
-                    max={40}
-                    step={1}
-                    onValueChange={(vals) => update("paddingY", vals[0])}
-                />
+            {/* Hover */}
+            <div className="space-y-2 border-l-2 pl-2">
+                 <Label className="text-sm font-semibold">Hover</Label>
+                 <div className="grid grid-cols-2 gap-2">
+                     <TokenInput label="Light" value={button.bg.hover.light} path={["bg", "hover", "light"]} />
+                     <TokenInput label="Dark" value={button.bg.hover.dark} path={["bg", "hover", "dark"]} />
+                 </div>
             </div>
 
-            <div className="space-y-3">
-                <div className="flex justify-between">
-                    <Label>Border Radius (rem)</Label>
-                    <span className="text-xs text-muted-foreground">{buttonConfig.borderRadius}rem</span>
-                </div>
-                <Slider
-                    value={[buttonConfig.borderRadius]}
-                    min={0}
-                    max={3}
-                    step={0.125}
-                    onValueChange={(vals) => update("borderRadius", vals[0])}
-                />
+             {/* Active */}
+            <div className="space-y-2 border-l-2 pl-2">
+                 <Label className="text-sm font-semibold">Active</Label>
+                 <div className="grid grid-cols-2 gap-2">
+                     <TokenInput label="Light" value={button.bg.active.light} path={["bg", "active", "light"]} />
+                     <TokenInput label="Dark" value={button.bg.active.dark} path={["bg", "active", "dark"]} />
+                 </div>
+            </div>
+
+             {/* Disabled */}
+             <div className="space-y-2 border-l-2 pl-2">
+                 <Label className="text-sm font-semibold">Disabled</Label>
+                 <div className="grid grid-cols-2 gap-2">
+                     <TokenInput label="Light" value={button.bg.disabled.light} path={["bg", "disabled", "light"]} />
+                     <TokenInput label="Dark" value={button.bg.disabled.dark} path={["bg", "disabled", "dark"]} />
+                 </div>
             </div>
         </div>
 
         <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-muted-foreground">Typography</h4>
-             <div className="space-y-3">
-                <div className="flex justify-between">
-                    <Label>Font Size (px)</Label>
-                    <span className="text-xs text-muted-foreground">{buttonConfig.fontSize}px</span>
-                </div>
-                <Slider
-                    value={[buttonConfig.fontSize]}
-                    min={10}
-                    max={24}
-                    step={1}
-                    onValueChange={(vals) => update("fontSize", vals[0])}
-                />
-            </div>
-             <div className="space-y-2">
-                <Label>Font Weight</Label>
-                <select
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                    value={buttonConfig.fontWeight}
-                    onChange={(e) => update("fontWeight", e.target.value)}
-                >
-                    <option value="400">Normal (400)</option>
-                    <option value="500">Medium (500)</option>
-                    <option value="600">Semibold (600)</option>
-                    <option value="700">Bold (700)</option>
-                </select>
-            </div>
-             <div className="space-y-2">
-                <Label>Text Transform</Label>
-                <select
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                    value={buttonConfig.textTransform}
-                    onChange={(e) => update("textTransform", e.target.value)}
-                >
-                    <option value="none">None</option>
-                    <option value="uppercase">Uppercase</option>
-                    <option value="lowercase">Lowercase</option>
-                    <option value="capitalize">Capitalize</option>
-                </select>
+            <h4 className="text-sm font-semibold text-muted-foreground">Text Colors</h4>
+            <div className="space-y-2 border-l-2 pl-2">
+                 <Label className="text-sm font-semibold">Default</Label>
+                 <div className="grid grid-cols-2 gap-2">
+                     <TokenInput label="Light" value={button.text.default.light} path={["text", "default", "light"]} />
+                     <TokenInput label="Dark" value={button.text.default.dark} path={["text", "default", "dark"]} />
+                 </div>
             </div>
         </div>
 
         <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-muted-foreground">Effects</h4>
-             <div className="space-y-2">
-                <Label>Shadow</Label>
-                <select
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                    value={buttonConfig.boxShadow}
-                    onChange={(e) => update("boxShadow", e.target.value)}
-                >
-                    <option value="none">None</option>
-                    <option value="sm">Small</option>
-                    <option value="md">Medium</option>
-                    <option value="lg">Large</option>
-                </select>
+            <h4 className="text-sm font-semibold text-muted-foreground">Shape & Spacing</h4>
+            <div className="grid grid-cols-2 gap-4">
+                 <TokenInput label="Radius" value={button.radius} path={["radius"]} />
+                 <div className="col-span-2 grid grid-cols-2 gap-4">
+                    <TokenInput label="Padding X" value={button.padding.x} path={["padding", "x"]} />
+                    <TokenInput label="Padding Y" value={button.padding.y} path={["padding", "y"]} />
+                 </div>
             </div>
         </div>
       </div>
