@@ -6,14 +6,16 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button"; // Standard button
 import { ThemeWrapper } from "@/components/ThemeWrapper";
+import { ArrowLeft } from "lucide-react";
 
 interface ButtonComponentEditorProps {
   buttonConfig: ButtonConfig;
   themeConfig: ThemeConfig;
   onChange: (config: ButtonConfig) => void;
+  onBack?: () => void;
 }
 
-export function ButtonComponentEditor({ buttonConfig, themeConfig, onChange }: ButtonComponentEditorProps) {
+export function ButtonComponentEditor({ buttonConfig, themeConfig, onChange, onBack }: ButtonComponentEditorProps) {
   const update = (key: keyof ButtonConfig, value: string | number) => {
     onChange({
       ...buttonConfig,
@@ -23,6 +25,15 @@ export function ButtonComponentEditor({ buttonConfig, themeConfig, onChange }: B
 
   return (
     <div className="space-y-6 h-full flex flex-col">
+       <div className="flex items-center gap-2 mb-2">
+         {onBack && (
+            <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0 h-8 w-8">
+               <ArrowLeft className="w-4 h-4" />
+            </Button>
+         )}
+         <h3 className="text-lg font-semibold">Button</h3>
+       </div>
+
        {/* Preview Section */}
       <Card className="shrink-0">
         <CardHeader className="pb-3 pt-3">

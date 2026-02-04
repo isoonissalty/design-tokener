@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { Hero } from "./Hero";
 import { Features } from "./Features";
+import { ComponentShowcase } from "./ComponentShowcase";
 import { Footer } from "./Footer";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun } from "lucide-react";
@@ -33,6 +34,7 @@ export const LandingPage = memo(function LandingPage({ isDark, toggleTheme }: La
 
        <Hero />
        <Features />
+       <ComponentShowcase />
        <Footer />
     </div>
   );

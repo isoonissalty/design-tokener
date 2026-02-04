@@ -1,19 +1,32 @@
 "use client";
 
 import { useState } from "react";
-import { defaultThemeConfig, defaultButtonConfig, ThemeConfig, ButtonConfig } from "@/types/theme";
 import { GlobalTokenEditor } from "@/components/editor/GlobalTokenEditor";
-import { ButtonComponentEditor } from "@/components/editor/ButtonComponentEditor";
+import { ComponentManager } from "@/components/editor/ComponentManager";
 import { LandingPage } from "@/components/landing-page/LandingPage";
 import { ThemeWrapper } from "@/components/ThemeWrapper";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Eye, X } from "lucide-react";
+import { Eye, X, Undo2, Redo2, Save, FolderOpen, RotateCcw } from "lucide-react";
 import { ExportButton } from "@/components/ExportButton";
+import { useThemeManager } from "@/hooks/useThemeManager";
+import { Group, Panel, Separator } from "react-resizable-panels";
 
 export default function Home() {
-  const [themeConfig, setThemeConfig] = useState<ThemeConfig>(defaultThemeConfig);
-  const [buttonConfig, setButtonConfig] = useState<ButtonConfig>(defaultButtonConfig);
+  const {
+    themeConfig,
+    buttonConfig,
+    setThemeConfig,
+    setButtonConfig,
+    undo,
+    redo,
+    reset,
+    save,
+    load,
+    canUndo,
+    canRedo
+  } = useThemeManager();
+
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("tokens");
   const [isPreviewDark, setIsPreviewDark] = useState(false);
@@ -24,7 +37,26 @@ export default function Home() {
     <main className="h-screen flex flex-col bg-background text-foreground font-sans overflow-hidden">
         {/* Header */}
         <header className="flex justify-between items-center p-4 border-b shrink-0 bg-background z-10">
-             <h1 className="text-xl font-bold">Design Token Builder</h1>
+             <div className="flex items-center gap-4">
+                 <h1 className="text-xl font-bold">Design Token Builder</h1>
+                 <div className="flex items-center gap-1 border-l pl-4 ml-2 h-6">
+                     <Button variant="ghost" size="icon" onClick={undo} disabled={!canUndo} title="Undo">
+                         <Undo2 className="w-4 h-4" />
+                     </Button>
+                     <Button variant="ghost" size="icon" onClick={redo} disabled={!canRedo} title="Redo">
+                         <Redo2 className="w-4 h-4" />
+                     </Button>
+                     <Button variant="ghost" size="icon" onClick={reset} title="Reset to Default">
+                         <RotateCcw className="w-4 h-4" />
+                     </Button>
+                      <Button variant="ghost" size="icon" onClick={save} title="Save to Local Storage">
+                         <Save className="w-4 h-4" />
+                     </Button>
+                      <Button variant="ghost" size="icon" onClick={load} title="Load from Local Storage">
+                         <FolderOpen className="w-4 h-4" />
+                     </Button>
+                 </div>
+             </div>
              <div className="flex gap-2">
                  <Button variant="outline" onClick={() => setIsPreviewOpen(true)}>
                     <Eye className="w-4 h-4 mr-2" />
@@ -35,40 +67,46 @@ export default function Home() {
         </header>
 
         <div className="flex-1 flex overflow-hidden">
-            {/* Sidebar Editor */}
-            <aside className="w-[400px] border-r flex flex-col bg-muted/10">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-                    <div className="p-4 border-b shrink-0">
-                         <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="tokens">Tokens</TabsTrigger>
-                            <TabsTrigger value="components">Components</TabsTrigger>
-                         </TabsList>
-                    </div>
+             <Group orientation="horizontal">
+                {/* Sidebar Editor */}
+                <Panel defaultSize={25} minSize={20} className="min-w-[480px] border-r flex flex-col bg-muted/10">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+                        <div className="p-4 border-b shrink-0">
+                             <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="tokens">Tokens</TabsTrigger>
+                                <TabsTrigger value="components">Components</TabsTrigger>
+                             </TabsList>
+                        </div>
 
-                    <div className="flex-1 overflow-hidden p-4">
-                        <TabsContent value="tokens" className="h-full mt-0">
-                            <GlobalTokenEditor config={themeConfig} onChange={setThemeConfig} />
-                        </TabsContent>
-                        <TabsContent value="components" className="h-full mt-0">
-                             <ButtonComponentEditor
-                                buttonConfig={buttonConfig}
-                                themeConfig={themeConfig}
-                                onChange={setButtonConfig}
-                             />
-                        </TabsContent>
-                    </div>
-                </Tabs>
-            </aside>
+                        <div className="flex-1 overflow-hidden p-4">
+                            <TabsContent value="tokens" className="h-full mt-0">
+                                <GlobalTokenEditor config={themeConfig} onChange={setThemeConfig} />
+                            </TabsContent>
+                            <TabsContent value="components" className="h-full mt-0">
+                                 <ComponentManager
+                                    buttonConfig={buttonConfig}
+                                    themeConfig={themeConfig}
+                                    onButtonConfigChange={setButtonConfig}
+                                 />
+                            </TabsContent>
+                        </div>
+                    </Tabs>
+                </Panel>
 
-            {/* Main Preview Area */}
-            <section className="flex-1 bg-muted/20 relative overflow-hidden flex flex-col">
-                <div className="flex-1 overflow-auto p-8 flex items-start justify-center">
-                     {/* We wrap the preview in ThemeWrapper */}
-                     <ThemeWrapper themeConfig={themeConfig} buttonConfig={buttonConfig} className="w-full max-w-5xl shadow-2xl rounded-xl overflow-hidden border bg-background ring-1 ring-slate-900/5 origin-top scale-90 preview-root">
-                        <LandingPage isDark={isPreviewDark} toggleTheme={togglePreviewTheme} />
-                     </ThemeWrapper>
-                </div>
-            </section>
+                <Separator className="w-1 bg-border hover:bg-primary transition-colors cursor-col-resize" />
+
+                {/* Main Preview Area */}
+                <Panel defaultSize={75}>
+                    <section className="h-full bg-muted/20 relative overflow-hidden flex flex-col">
+                        <div className="flex-1 overflow-auto p-8 flex items-start justify-center">
+                             {/* We wrap the preview in ThemeWrapper */}
+                             <ThemeWrapper themeConfig={themeConfig} buttonConfig={buttonConfig} className="w-full max-w-5xl shadow-2xl rounded-xl overflow-hidden border bg-background ring-1 ring-slate-900/5 origin-top scale-90 preview-root">
+                                <LandingPage isDark={isPreviewDark} toggleTheme={togglePreviewTheme} />
+                             </ThemeWrapper>
+                        </div>
+                    </section>
+                </Panel>
+            </Group>
         </div>
 
          {/* Full Screen Overlay Preview */}
