@@ -2,7 +2,7 @@
 
 import { DesignTokenSystem } from "@/types/token-system";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronDown, ChevronRight } from "lucide-react";
 import { TokenCategoryList, Category } from "./TokenCategoryList";
@@ -15,11 +15,38 @@ interface GlobalTokenEditorProps {
   onChange: (tokens: DesignTokenSystem) => void;
 }
 
+interface CollapsibleSectionProps {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}
+
+const CollapsibleSection = ({ title, children, defaultOpen = false }: CollapsibleSectionProps) => {
+    const [isOpen, setIsOpen] = useState(defaultOpen);
+    return (
+        <div className="border-b last:border-0">
+            <Button
+              variant="ghost"
+              className="w-full justify-start p-2 h-auto hover:bg-muted/50 rounded-none font-medium text-sm"
+              onClick={() => setIsOpen(!isOpen)}
+            >
+                {isOpen ? <ChevronDown className="w-4 h-4 mr-2" /> : <ChevronRight className="w-4 h-4 mr-2" />}
+                {title}
+            </Button>
+            {isOpen && (
+                <div className="pl-4 pr-2 pb-2">
+                    {children}
+                </div>
+            )}
+        </div>
+    );
+};
+
 export function GlobalTokenEditor({ tokens, onChange }: GlobalTokenEditorProps) {
   const [activeTab, setActiveTab] = useState("foundation");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const updateToken = (path: string[], value: string) => {
+  const updateToken = useCallback((path: string[], value: string) => {
     const newTokens = JSON.parse(JSON.stringify(tokens));
     let current = newTokens;
     for (let i = 0; i < path.length - 1; i++) {
@@ -27,37 +54,19 @@ export function GlobalTokenEditor({ tokens, onChange }: GlobalTokenEditorProps) 
     }
     current[path[path.length - 1]] = value;
     onChange(newTokens);
-  };
+  }, [tokens, onChange]);
 
-  const updateSettings = (key: string, value: string) => {
+  const updateSettings = useCallback((key: string, value: string) => {
       const newTokens = JSON.parse(JSON.stringify(tokens));
       if (!newTokens.settings) {
           newTokens.settings = {};
       }
       newTokens.settings[key] = value;
       onChange(newTokens);
-  };
+  }, [tokens, onChange]);
 
-  const CollapsibleSection = ({ title, children, defaultOpen = false }: { title: string, children: React.ReactNode, defaultOpen?: boolean }) => {
-      const [isOpen, setIsOpen] = useState(defaultOpen);
-      return (
-          <div className="border-b last:border-0">
-              <Button
-                variant="ghost"
-                className="w-full justify-start p-2 h-auto hover:bg-muted/50 rounded-none font-medium text-sm"
-                onClick={() => setIsOpen(!isOpen)}
-              >
-                  {isOpen ? <ChevronDown className="w-4 h-4 mr-2" /> : <ChevronRight className="w-4 h-4 mr-2" />}
-                  {title}
-              </Button>
-              {isOpen && (
-                  <div className="pl-4 pr-2 pb-2">
-                      {children}
-                  </div>
-              )}
-          </div>
-      );
-  };
+
+
 
   const renderObjectFields = (obj: any, path: string[]) => {
     return Object.entries(obj).map(([key, value]) => {

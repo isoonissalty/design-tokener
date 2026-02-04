@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { DesignTokenSystem } from "@/types/token-system";
@@ -20,27 +20,36 @@ interface TokenFieldProps {
 export function TokenField({ label, value, onChange, path, tokens, typeHint }: TokenFieldProps) {
   const [localValue, setLocalValue] = useState(value);
   const debouncedValue = useDebounce(localValue, 500);
+  
+  // Track the last value we sent to parent to prevent the debounce from reverting immediate changes
+  const lastPropagatedValue = useRef(value);
 
-  // Sync external changes to local state (only if different and not currently editing - simplified)
+  // Sync external changes to local state
   useEffect(() => {
     setLocalValue(value);
+    lastPropagatedValue.current = value;
   }, [value]);
 
-  // Handle debounced updates for text input
+  // Handle debounced updates for text input ONLY
+  // Only propagate if the debounced value differs from what we last sent
   useEffect(() => {
-    if (debouncedValue !== value) {
+    if (debouncedValue !== lastPropagatedValue.current) {
+      lastPropagatedValue.current = debouncedValue;
       onChange(debouncedValue);
     }
-  }, [debouncedValue, onChange, value]);
+  }, [debouncedValue, onChange]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLocalValue(e.target.value);
   };
 
-  const handleImmediateChange = (newValue: string) => {
+  const handleImmediateChange = useCallback((newValue: string) => {
+    // For immediate changes (selects, color pickers), update immediately
+    // Also update the ref so debounce doesn't revert it
+    lastPropagatedValue.current = newValue;
     setLocalValue(newValue);
     onChange(newValue);
-  };
+  }, [onChange]);
 
   // Determine Type
   const isColor = typeHint === "color" ||

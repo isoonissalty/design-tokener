@@ -26,14 +26,14 @@ export function TokenReferenceSelector({ value, onChange, options, placeholder }
 
   return (
     <Select value={displayValue} onValueChange={onChange}>
-      <SelectTrigger className="w-full h-8 text-xs font-mono">
+      <SelectTrigger className="w-full h-8 text-xs font-mono bg-white">
         <SelectValue placeholder={placeholder || "Select token..."}>
              {displayValue}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent className="max-h-[200px]">
+      <SelectContent className="max-h-[200px] bg-white z-50">
         {options.map((opt) => (
-          <SelectItem key={opt.value} value={opt.value} className="text-xs">
+          <SelectItem key={opt.value} value={opt.value} className="text-xs bg-white">
             <div className="flex items-center justify-between w-full gap-4">
                <span>{opt.label}</span>
                {opt.previewValue && (

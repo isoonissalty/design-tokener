@@ -16,7 +16,7 @@ export const LandingPage = memo(function LandingPage({ isDark, toggleTheme }: La
     <div className={`w-full h-full bg-background text-foreground overflow-y-auto font-sans ${isDark ? "dark" : ""}`}>
        <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 border-border">
           <div className="container mx-auto flex justify-between items-center h-16 px-4">
-            <span className="font-bold text-xl text-primary">Brand</span>
+            <span className="font-bold text-xl text-">Brand</span>
             <nav className="hidden md:flex gap-6 text-sm font-medium text-muted-foreground">
                 <a href="#" className="hover:text-foreground transition-colors">Product</a>
                 <a href="#" className="hover:text-foreground transition-colors">Solutions</a>

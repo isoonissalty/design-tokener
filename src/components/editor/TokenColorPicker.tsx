@@ -1,6 +1,5 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import { useCallback, useMemo, memo } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DesignTokenSystem } from "@/types/token-system";
 
@@ -10,65 +9,65 @@ interface TokenColorPickerProps {
   tokens: DesignTokenSystem;
 }
 
-export function TokenColorPicker({ value, onChange, tokens }: TokenColorPickerProps) {
-  const [selectedFamily, setSelectedFamily] = useState<string>("");
-  const [selectedShade, setSelectedShade] = useState<string>("");
+export const TokenColorPicker = memo(function TokenColorPicker({ value, onChange, tokens }: TokenColorPickerProps) {
 
-  // Parse initial value
-  useEffect(() => {
+  // Parse the current value to extract family and shade
+  const { selectedFamily, selectedShade } = useMemo(() => {
+    let family = "";
+    let shade = "";
+    
     if (value.startsWith("{color.") && value.endsWith("}")) {
       const parts = value.slice(1, -1).split(".");
       // format: color.blue.500
       if (parts.length === 3) {
-        setSelectedFamily(parts[1]);
-        setSelectedShade(parts[2]);
+        family = parts[1];
+        shade = parts[2];
       } else if (parts.length === 2 && parts[1] === "white") {
-           // Handle cases like color.white.DEFAULT or just color.white (if flattened)
-           // But here structure is color.white.DEFAULT
-           setSelectedFamily(parts[1]);
+        family = parts[1];
+        const whiteHasDefault = tokens.foundation.colors["white"] && "DEFAULT" in tokens.foundation.colors["white"];
+        if (whiteHasDefault) {
+          shade = "DEFAULT";
+        }
       }
     }
-  }, [value]);
+    return { selectedFamily: family, selectedShade: shade };
+  }, [value, tokens.foundation.colors]);
 
-  const families = Object.keys(tokens.foundation.colors);
+  const families = useMemo(() => Object.keys(tokens.foundation.colors), [tokens.foundation.colors]);
 
-  const shades = selectedFamily && tokens.foundation.colors[selectedFamily]
-    ? Object.keys(tokens.foundation.colors[selectedFamily])
-    : [];
+  const shades = useMemo(() => {
+    if (selectedFamily && tokens.foundation.colors[selectedFamily]) {
+      return Object.keys(tokens.foundation.colors[selectedFamily]);
+    }
+    return [];
+  }, [selectedFamily, tokens.foundation.colors]);
 
-  const handleFamilyChange = (family: string) => {
-    setSelectedFamily(family);
+  const handleFamilyChange = useCallback((family: string) => {
     // Default to first shade or specific defaults
-    const newShades = Object.keys(tokens.foundation.colors[family]);
-    const defaultShade = newShades.includes("500") ? "500" : newShades.includes("DEFAULT") ? "DEFAULT" : newShades[0];
-
-    setSelectedShade(defaultShade);
+    const familyColors = tokens.foundation.colors[family] || {};
+    const availableShades = Object.keys(familyColors);
+    const defaultShade = availableShades.includes("500") 
+      ? "500" 
+      : availableShades.includes("DEFAULT") 
+        ? "DEFAULT" 
+        : availableShades[0];
+    
     onChange(`{color.${family}.${defaultShade}}`);
-  };
+  }, [tokens.foundation.colors, onChange]);
 
-  const handleShadeChange = (shade: string) => {
-    setSelectedShade(shade);
+  const handleShadeChange = useCallback((shade: string) => {
     onChange(`{color.${selectedFamily}.${shade}}`);
-  };
-
-  // Check if current value is a hex or non-reference
-  const isDirectValue = !value.startsWith("{");
-
-  if (isDirectValue) {
-      // If it's a direct hex value, maybe show a warning or a button to switch to reference mode?
-      // For now, we assume this picker is used when we want to pick a reference.
-      // But we can fallback to just showing the reference builder.
-  }
+  }, [selectedFamily, onChange]);
 
   return (
     <div className="flex gap-2 w-full">
       <Select value={selectedFamily} onValueChange={handleFamilyChange}>
-        <SelectTrigger className="w-[120px] h-8 text-xs">
+        <SelectTrigger className="w-[120px] h-8 text-xs bg-white">
           <SelectValue placeholder="Color" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="bg-white z-50">
           {families.map((f) => (
-            <SelectItem key={f} value={f} className="text-xs">
+            <SelectItem key={f} value={f} className="text-xs bg-white">
               <div className="flex items-center gap-2">
                 <div
                     className="w-3 h-3 rounded-full border"
@@ -81,13 +80,18 @@ export function TokenColorPicker({ value, onChange, tokens }: TokenColorPickerPr
         </SelectContent>
       </Select>
 
-      <Select value={selectedShade} onValueChange={handleShadeChange} disabled={!selectedFamily}>
-        <SelectTrigger className="flex-1 h-8 text-xs">
+      <Select 
+        key={selectedFamily} 
+        value={selectedShade} 
+        onValueChange={handleShadeChange} 
+        disabled={!selectedFamily}
+      >
+        <SelectTrigger className="flex-1 h-8 text-xs bg-white">
           <SelectValue placeholder="Shade" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="bg-white z-50">
           {shades.map((s) => (
-            <SelectItem key={s} value={s} className="text-xs">
+            <SelectItem key={s} value={s} className="text-xs bg-white">
               <div className="flex items-center gap-2">
                  <div
                     className="w-3 h-3 rounded-sm border"
@@ -101,4 +105,4 @@ export function TokenColorPicker({ value, onChange, tokens }: TokenColorPickerPr
       </Select>
     </div>
   );
-}
+});
