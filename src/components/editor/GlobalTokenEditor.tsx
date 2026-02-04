@@ -9,7 +9,7 @@ import { TokenCategoryList, Category } from "./TokenCategoryList";
 import { TokenField } from "./TokenField";
 import { Label } from "@/components/ui/label";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { updateToken, updateSettings } from "@/store/features/themeSlice";
+import { updateSettings } from "@/store/features/themeSlice";
 import { setActiveEditorTab, setSelectedEditorCategory } from "@/store/features/uiSlice";
 
 interface CollapsibleSectionProps {
@@ -45,9 +45,7 @@ export function GlobalTokenEditor() {
   const activeTab = useAppSelector((state) => state.ui.activeEditorTab);
   const selectedCategory = useAppSelector((state) => state.ui.selectedEditorCategory);
 
-  const handleUpdateToken = useCallback((path: string[], value: string) => {
-    dispatch(updateToken({ path, value }));
-  }, [dispatch]);
+
 
   const handleUpdateSettings = useCallback((key: string, value: string) => {
     dispatch(updateSettings({ key, value }));
@@ -63,7 +61,6 @@ export function GlobalTokenEditor() {
                 key={currentPath.join(".")}
                 label={key}
                 value={value}
-                onChange={(val) => handleUpdateToken(currentPath, val)}
                 path={currentPath}
                 tokens={tokens}
             />
@@ -77,14 +74,12 @@ export function GlobalTokenEditor() {
                       <TokenField
                         label="Light"
                         value={(value as any).light}
-                        onChange={(val) => handleUpdateToken([...currentPath, "light"], val)}
                         path={[...currentPath, "light"]}
                         tokens={tokens}
                       />
                       <TokenField
                         label="Dark"
                         value={(value as any).dark}
-                        onChange={(val) => handleUpdateToken([...currentPath, "dark"], val)}
                         path={[...currentPath, "dark"]}
                         tokens={tokens}
                       />
@@ -101,7 +96,6 @@ export function GlobalTokenEditor() {
                             key={prop}
                             label={prop}
                             value={val as string}
-                            onChange={(v) => handleUpdateToken([...currentPath, prop], v)}
                             path={[...currentPath, prop]}
                             tokens={tokens}
                           />
