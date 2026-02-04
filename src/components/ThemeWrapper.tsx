@@ -1,66 +1,60 @@
 "use client";
 
 import React from "react";
-import { ThemeConfig, ButtonConfig } from "@/types/theme";
-import { hexToHsl } from "@/lib/colors";
+import { DesignTokenSystem } from "@/types/token-system";
+import { generateTokenCss } from "@/lib/css-generator";
 
 interface ThemeWrapperProps {
-  themeConfig: ThemeConfig;
-  buttonConfig: ButtonConfig;
+  tokens: DesignTokenSystem;
   children: React.ReactNode;
   className?: string;
 }
 
-export function ThemeWrapper({ themeConfig, buttonConfig, children, className }: ThemeWrapperProps) {
-  const lightVars = Object.entries(themeConfig.light).map(([key, value]) => {
-     const cssVar = `--${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`;
-     return `${cssVar}: ${hexToHsl(value)};`;
-  }).join("\n");
+export function ThemeWrapper({ tokens, children, className }: ThemeWrapperProps) {
 
-  const darkVars = Object.entries(themeConfig.dark).map(([key, value]) => {
-     const cssVar = `--${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`;
-     return `${cssVar}: ${hexToHsl(value)};`;
-  }).join("\n");
-
-  const radiusVar = `--radius: ${themeConfig.radius}rem;`;
-
-  const btnVars = `
-    --btn-px: ${buttonConfig.paddingX}px;
-    --btn-py: ${buttonConfig.paddingY}px;
-    --btn-radius: ${buttonConfig.borderRadius}rem;
-    --btn-font-size: ${buttonConfig.fontSize}px;
-    --btn-font-weight: ${buttonConfig.fontWeight};
-    --btn-text-transform: ${buttonConfig.textTransform};
-    --btn-shadow: ${buttonConfig.boxShadow === 'none' ? 'none' :
-                    buttonConfig.boxShadow === 'sm' ? '0 1px 2px 0 rgb(0 0 0 / 0.05)' :
-                    buttonConfig.boxShadow === 'md' ? '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' :
-                    '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'};
-  `;
+  const { root: cssVarsRoot, dark: cssVarsDark } = generateTokenCss(tokens);
 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: `
         :root {
-          ${lightVars}
-          ${radiusVar}
-          ${btnVars}
+          ${cssVarsRoot.join("\n")}
         }
         .preview-root .dark {
-          ${darkVars}
+          ${cssVarsDark.join("\n")}
         }
 
-        .preview-area button {
-            padding-left: var(--btn-px) !important;
-            padding-right: var(--btn-px) !important;
-            padding-top: var(--btn-py) !important;
-            padding-bottom: var(--btn-py) !important;
-            border-radius: var(--btn-radius) !important;
-            font-size: var(--btn-font-size) !important;
-            font-weight: var(--btn-font-weight) !important;
-            text-transform: var(--btn-text-transform) !important;
-            box-shadow: var(--btn-shadow) !important;
-            height: auto !important;
-            min-height: 2.25rem; /* Ensure it's not too small */
+        /* Map V1 Tokens to Shadcn/Tailwind Theme Variables */
+        :root {
+            --background: var(--color-bg-canvas);
+            --foreground: var(--color-text-primary);
+
+            --card: var(--color-bg-surface);
+            --card-foreground: var(--color-text-primary);
+
+            --popover: var(--color-bg-surface);
+            --popover-foreground: var(--color-text-primary);
+
+            --primary: var(--color-intent-primary);
+            --primary-foreground: var(--color-text-inverse);
+
+            --secondary: var(--color-bg-subtle);
+            --secondary-foreground: var(--color-text-primary);
+
+            --muted: var(--color-bg-subtle);
+            --muted-foreground: var(--color-text-secondary);
+
+            --accent: var(--color-bg-subtle);
+            --accent-foreground: var(--color-text-primary);
+
+            --destructive: var(--color-intent-error);
+            --destructive-foreground: var(--color-text-inverse);
+
+            --border: var(--color-border-default);
+            --input: var(--color-border-default);
+            --ring: var(--color-border-focus);
+
+            --radius: var(--radius-md);
         }
       `}} />
       <div className={`${className} preview-area`}>

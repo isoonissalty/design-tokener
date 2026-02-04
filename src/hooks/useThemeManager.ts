@@ -1,14 +1,14 @@
 import { useState, useCallback } from 'react';
-import { ThemeConfig, ButtonConfig, defaultThemeConfig, defaultButtonConfig } from '@/types/theme';
+import { DesignTokenSystem } from '@/types/token-system';
+import { defaultDesignTokens } from '@/lib/token-defaults';
 
 interface HistoryState {
-  themeConfig: ThemeConfig;
-  buttonConfig: ButtonConfig;
+  tokens: DesignTokenSystem;
 }
 
 export function useThemeManager() {
   const [history, setHistory] = useState<HistoryState[]>([
-    { themeConfig: defaultThemeConfig, buttonConfig: defaultButtonConfig }
+    { tokens: defaultDesignTokens }
   ]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -19,23 +19,13 @@ export function useThemeManager() {
       const newHistory = prev.slice(0, currentIndex + 1);
       const current = newHistory[newHistory.length - 1];
       const nextState = { ...current, ...newState };
-
-      // Simple equality check to avoid duplicate entries could be added here
-      // But for deep objects it's expensive.
-      // We will just push.
-
       return [...newHistory, nextState];
     });
     setCurrentIndex(prev => prev + 1);
   }, [currentIndex]);
 
-  const setThemeConfig = useCallback((config: ThemeConfig) => {
-    // We can optimize by checking if it's different
-    updateState({ themeConfig: config });
-  }, [updateState]);
-
-  const setButtonConfig = useCallback((config: ButtonConfig) => {
-    updateState({ buttonConfig: config });
+  const setTokens = useCallback((tokens: DesignTokenSystem) => {
+    updateState({ tokens });
   }, [updateState]);
 
   const undo = useCallback(() => {
@@ -47,7 +37,7 @@ export function useThemeManager() {
   }, [history.length]);
 
   const reset = useCallback(() => {
-    updateState({ themeConfig: defaultThemeConfig, buttonConfig: defaultButtonConfig });
+    updateState({ tokens: defaultDesignTokens });
   }, [updateState]);
 
   const save = useCallback(() => {
@@ -65,10 +55,14 @@ export function useThemeManager() {
       const saved = localStorage.getItem('design-token-builder-state');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Validate or just cast
-        if (parsed.themeConfig && parsed.buttonConfig) {
-             updateState({ themeConfig: parsed.themeConfig, buttonConfig: parsed.buttonConfig });
+        if (parsed.tokens) {
+             updateState({ tokens: parsed.tokens });
              alert('Configuration loaded!');
+        } else if (parsed.themeConfig) {
+             // Legacy fallback - simplistic
+             alert('Legacy configuration found but migration is not implemented. Resetting to defaults.');
+             // In a real app we'd map legacy to new here
+             updateState({ tokens: defaultDesignTokens });
         }
       } else {
         alert('No saved configuration found.');
@@ -83,10 +77,8 @@ export function useThemeManager() {
   const canRedo = currentIndex < history.length - 1;
 
   return {
-    themeConfig: currentState.themeConfig,
-    buttonConfig: currentState.buttonConfig,
-    setThemeConfig,
-    setButtonConfig,
+    tokens: currentState.tokens,
+    setTokens,
     undo,
     redo,
     reset,
