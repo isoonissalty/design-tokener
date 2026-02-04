@@ -1,26 +1,20 @@
-import { useState } from "react";
+"use client";
+
 import { ComponentList } from "./ComponentList";
 import { ButtonComponentEditor } from "./ButtonComponentEditor";
-import { DesignTokenSystem } from "@/types/token-system";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setSelectedComponentId } from "@/store/features/uiSlice";
 
-interface ComponentManagerProps {
-  tokens: DesignTokenSystem;
-  onChange: (tokens: DesignTokenSystem) => void;
-}
-
-export function ComponentManager({ tokens, onChange }: ComponentManagerProps) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+export function ComponentManager() {
+  const dispatch = useAppDispatch();
+  const selectedId = useAppSelector((state) => state.ui.selectedComponentId);
 
   if (selectedId === "button") {
     return (
-      <ButtonComponentEditor
-        tokens={tokens}
-        onChange={onChange}
-        onBack={() => setSelectedId(null)}
-      />
+      <ButtonComponentEditor />
     );
   }
 
@@ -29,7 +23,7 @@ export function ComponentManager({ tokens, onChange }: ComponentManagerProps) {
     return (
       <div className="flex flex-col h-full">
          <div className="flex items-center gap-2 mb-4">
-             <Button variant="ghost" size="icon" onClick={() => setSelectedId(null)} className="shrink-0 h-8 w-8">
+             <Button variant="ghost" size="icon" onClick={() => dispatch(setSelectedComponentId(null))} className="shrink-0 h-8 w-8">
                <ArrowLeft className="w-4 h-4" />
              </Button>
              <h3 className="font-bold capitalize">{selectedId}</h3>
@@ -44,5 +38,5 @@ export function ComponentManager({ tokens, onChange }: ComponentManagerProps) {
     );
   }
 
-  return <ComponentList onSelect={setSelectedId} />;
+  return <ComponentList onSelect={(id) => dispatch(setSelectedComponentId(id))} />;
 }

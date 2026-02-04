@@ -1,35 +1,25 @@
 "use client";
 
-import { DesignTokenSystem } from "@/types/token-system";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button"; // Standard button
+import { Button } from "@/components/ui/button";
 import { ThemeWrapper } from "@/components/ThemeWrapper";
 import { ArrowLeft } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { updateToken } from "@/store/features/themeSlice";
+import { setSelectedComponentId } from "@/store/features/uiSlice";
 
-interface ButtonComponentEditorProps {
-  tokens: DesignTokenSystem;
-  onChange: (tokens: DesignTokenSystem) => void;
-  onBack?: () => void;
-}
-
-export function ButtonComponentEditor({ tokens, onChange, onBack }: ButtonComponentEditorProps) {
+export function ButtonComponentEditor() {
+  const dispatch = useAppDispatch();
+  const tokens = useAppSelector((state) => state.theme.present);
 
   const updateButtonToken = (path: string[], value: string) => {
-    // Deep clone
-    const newTokens = JSON.parse(JSON.stringify(tokens));
-
-    // Navigate to components.button
-    let current = newTokens.components.button;
-
-    // Navigate rest of path
-    for (let i = 0; i < path.length - 1; i++) {
-        current = current[path[i]];
-    }
-
-    current[path[path.length - 1]] = value;
-    onChange(newTokens);
+    // Prefix path with 'components', 'button'
+    dispatch(updateToken({
+        path: ['components', 'button', ...path],
+        value
+    }));
   };
 
   const TokenInput = ({ label, value, path, type = "text" }: { label: string, value: string, path: string[], type?: string }) => {
@@ -65,11 +55,9 @@ export function ButtonComponentEditor({ tokens, onChange, onBack }: ButtonCompon
   return (
     <div className="space-y-6 h-full flex flex-col">
        <div className="flex items-center gap-2 mb-2">
-         {onBack && (
-            <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0 h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={() => dispatch(setSelectedComponentId(null))} className="shrink-0 h-8 w-8">
                <ArrowLeft className="w-4 h-4" />
             </Button>
-         )}
          <h3 className="text-lg font-semibold">Button</h3>
        </div>
 
@@ -81,20 +69,6 @@ export function ButtonComponentEditor({ tokens, onChange, onBack }: ButtonCompon
         <CardContent>
             {/* We use ThemeWrapper here to apply the styles to these buttons specifically */}
             <ThemeWrapper tokens={tokens} className="p-6 border rounded-md bg-muted/30 flex flex-wrap gap-4 items-center justify-center min-h-[100px] preview-root">
-                {/* Note: Standard Shadcn buttons might not pick up these variables unless we force them or they are mapped.
-                    Our ThemeWrapper mappings:
-                    --radius -> var(--radius-md)
-                    --primary -> var(--color-intent-primary)
-
-                    So standard buttons WILL pick up global semantic changes.
-                    But 'button.bg.default' is not mapped to Shadcn button automatically.
-
-                    For this preview, we can manually apply style?
-                    Or rely on the user to use the variables?
-
-                    Let's demonstrate the tokens by applying them inline to a raw button for clarity?
-                    Or just show standard buttons and let the user know global tokens affect them.
-                */}
                 <Button>Primary</Button>
                 <Button variant="secondary">Secondary</Button>
                 <Button variant="destructive">Destructive</Button>

@@ -8,12 +8,9 @@ import { ArrowLeft, ChevronDown, ChevronRight } from "lucide-react";
 import { TokenCategoryList, Category } from "./TokenCategoryList";
 import { TokenField } from "./TokenField";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-
-interface GlobalTokenEditorProps {
-  tokens: DesignTokenSystem;
-  onChange: (tokens: DesignTokenSystem) => void;
-}
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { updateToken, updateSettings } from "@/store/features/themeSlice";
+import { setActiveEditorTab, setSelectedEditorCategory } from "@/store/features/uiSlice";
 
 interface CollapsibleSectionProps {
   title: string;
@@ -42,31 +39,19 @@ const CollapsibleSection = ({ title, children, defaultOpen = false }: Collapsibl
     );
 };
 
-export function GlobalTokenEditor({ tokens, onChange }: GlobalTokenEditorProps) {
-  const [activeTab, setActiveTab] = useState("foundation");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+export function GlobalTokenEditor() {
+  const dispatch = useAppDispatch();
+  const tokens = useAppSelector((state) => state.theme.present);
+  const activeTab = useAppSelector((state) => state.ui.activeEditorTab);
+  const selectedCategory = useAppSelector((state) => state.ui.selectedEditorCategory);
 
-  const updateToken = useCallback((path: string[], value: string) => {
-    const newTokens = JSON.parse(JSON.stringify(tokens));
-    let current = newTokens;
-    for (let i = 0; i < path.length - 1; i++) {
-      current = current[path[i]];
-    }
-    current[path[path.length - 1]] = value;
-    onChange(newTokens);
-  }, [tokens, onChange]);
+  const handleUpdateToken = useCallback((path: string[], value: string) => {
+    dispatch(updateToken({ path, value }));
+  }, [dispatch]);
 
-  const updateSettings = useCallback((key: string, value: string) => {
-      const newTokens = JSON.parse(JSON.stringify(tokens));
-      if (!newTokens.settings) {
-          newTokens.settings = {};
-      }
-      newTokens.settings[key] = value;
-      onChange(newTokens);
-  }, [tokens, onChange]);
-
-
-
+  const handleUpdateSettings = useCallback((key: string, value: string) => {
+    dispatch(updateSettings({ key, value }));
+  }, [dispatch]);
 
   const renderObjectFields = (obj: any, path: string[]) => {
     return Object.entries(obj).map(([key, value]) => {
@@ -78,7 +63,7 @@ export function GlobalTokenEditor({ tokens, onChange }: GlobalTokenEditorProps) 
                 key={currentPath.join(".")}
                 label={key}
                 value={value}
-                onChange={(val) => updateToken(currentPath, val)}
+                onChange={(val) => handleUpdateToken(currentPath, val)}
                 path={currentPath}
                 tokens={tokens}
             />
@@ -92,14 +77,14 @@ export function GlobalTokenEditor({ tokens, onChange }: GlobalTokenEditorProps) 
                       <TokenField
                         label="Light"
                         value={(value as any).light}
-                        onChange={(val) => updateToken([...currentPath, "light"], val)}
+                        onChange={(val) => handleUpdateToken([...currentPath, "light"], val)}
                         path={[...currentPath, "light"]}
                         tokens={tokens}
                       />
                       <TokenField
                         label="Dark"
                         value={(value as any).dark}
-                        onChange={(val) => updateToken([...currentPath, "dark"], val)}
+                        onChange={(val) => handleUpdateToken([...currentPath, "dark"], val)}
                         path={[...currentPath, "dark"]}
                         tokens={tokens}
                       />
@@ -116,7 +101,7 @@ export function GlobalTokenEditor({ tokens, onChange }: GlobalTokenEditorProps) 
                             key={prop}
                             label={prop}
                             value={val as string}
-                            onChange={(v) => updateToken([...currentPath, prop], v)}
+                            onChange={(v) => handleUpdateToken([...currentPath, prop], v)}
                             path={[...currentPath, prop]}
                             tokens={tokens}
                           />
@@ -172,7 +157,7 @@ export function GlobalTokenEditor({ tokens, onChange }: GlobalTokenEditorProps) 
       return (
           <div className="flex flex-col h-full">
               <div className="flex items-center gap-2 mb-4 shrink-0">
-                  <Button variant="ghost" size="icon" onClick={() => setSelectedCategory(null)} className="h-8 w-8">
+                  <Button variant="ghost" size="icon" onClick={() => dispatch(setSelectedEditorCategory(null))} className="h-8 w-8">
                       <ArrowLeft className="w-4 h-4" />
                   </Button>
                   <h3 className="font-bold capitalize">{selectedCategory.replace(/([A-Z])/g, ' $1').trim()}</h3>
@@ -186,7 +171,7 @@ export function GlobalTokenEditor({ tokens, onChange }: GlobalTokenEditorProps) 
 
   return (
     <div className="h-full flex flex-col">
-       <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setSelectedCategory(null); }} className="flex-1 flex flex-col min-h-0">
+       <Tabs value={activeTab} onValueChange={(val) => { dispatch(setActiveEditorTab(val)); }} className="flex-1 flex flex-col min-h-0">
           <TabsList className="grid w-full grid-cols-3 mb-4 shrink-0">
              <TabsTrigger value="settings">Settings</TabsTrigger>
              <TabsTrigger value="foundation">Foundation</TabsTrigger>
@@ -201,7 +186,7 @@ export function GlobalTokenEditor({ tokens, onChange }: GlobalTokenEditorProps) 
                            <TokenField
                                 label="Base Font Size"
                                 value={tokens.settings?.baseFontSize || "16px"}
-                                onChange={(val) => updateSettings("baseFontSize", val)}
+                                onChange={(val) => handleUpdateSettings("baseFontSize", val)}
                                 path={["settings", "baseFontSize"]}
                                 tokens={tokens}
                            />
@@ -214,13 +199,13 @@ export function GlobalTokenEditor({ tokens, onChange }: GlobalTokenEditorProps) 
 
               <TabsContent value="foundation" className="h-full mt-0">
                    {selectedCategory ? renderEditor() : (
-                       <TokenCategoryList categories={foundationCategories} onSelect={setSelectedCategory} />
+                       <TokenCategoryList categories={foundationCategories} onSelect={(id) => dispatch(setSelectedEditorCategory(id))} />
                    )}
               </TabsContent>
 
               <TabsContent value="semantic" className="h-full mt-0">
                    {selectedCategory ? renderEditor() : (
-                       <TokenCategoryList categories={semanticCategories} onSelect={setSelectedCategory} />
+                       <TokenCategoryList categories={semanticCategories} onSelect={(id) => dispatch(setSelectedEditorCategory(id))} />
                    )}
               </TabsContent>
           </div>
