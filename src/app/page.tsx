@@ -66,7 +66,7 @@ export default function Home() {
              </div>
         </header>
 
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-2 flex overflow-hidden">
              <Group orientation="horizontal">
                 {/* Sidebar Editor */}
                 <Panel defaultSize={25} minSize={20} className="min-w-[480px] border-r flex flex-col bg-muted/10">
@@ -96,7 +96,7 @@ export default function Home() {
                 <Separator className="w-1 bg-border hover:bg-primary transition-colors cursor-col-resize" />
 
                 {/* Main Preview Area */}
-                <Panel defaultSize={75}>
+                <Panel defaultSize={50}>
                     <section className="h-full bg-muted/20 relative overflow-hidden flex flex-col">
                         <div className="flex-1 overflow-auto p-8 flex items-start justify-center">
                              {/* We wrap the preview in ThemeWrapper */}
