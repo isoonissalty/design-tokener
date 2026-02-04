@@ -7,22 +7,39 @@ import { DesignTokenSystem } from "@/types/token-system";
 import { TokenColorPicker } from "./TokenColorPicker";
 import { TokenReferenceSelector } from "./TokenReferenceSelector";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useAppDispatch } from "@/store/hooks";
+import { updateToken } from "@/store/features/themeSlice";
 
 interface TokenFieldProps {
   label: string;
   value: string;
-  onChange: (value: string) => void;
+  onChange?: (value: string) => void;
   path: string[];
   tokens: DesignTokenSystem;
   typeHint?: string;
 }
 
 export function TokenField({ label, value, onChange, path, tokens, typeHint }: TokenFieldProps) {
+  const dispatch = useAppDispatch();
   const [localValue, setLocalValue] = useState(value);
   const debouncedValue = useDebounce(localValue, 500);
   
   // Track the last value we sent to parent to prevent the debounce from reverting immediate changes
   const lastPropagatedValue = useRef(value);
+  
+  // Use a ref to hold the latest path to avoid stale closures in memoized children
+  const pathRef = useRef(path);
+  pathRef.current = path;
+
+  // Stable update function that dispatches directly to Redux
+  // Use pathRef.current to always get the latest path value
+  const dispatchUpdate = useCallback((newValue: string) => {
+    if (onChange) {
+      onChange(newValue);
+    } else {
+      dispatch(updateToken({ path: pathRef.current, value: newValue }));
+    }
+  }, [dispatch, onChange]);
 
   // Sync external changes to local state
   useEffect(() => {
@@ -35,9 +52,9 @@ export function TokenField({ label, value, onChange, path, tokens, typeHint }: T
   useEffect(() => {
     if (debouncedValue !== lastPropagatedValue.current) {
       lastPropagatedValue.current = debouncedValue;
-      onChange(debouncedValue);
+      dispatchUpdate(debouncedValue);
     }
-  }, [debouncedValue, onChange]);
+  }, [debouncedValue, dispatchUpdate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLocalValue(e.target.value);
@@ -48,8 +65,9 @@ export function TokenField({ label, value, onChange, path, tokens, typeHint }: T
     // Also update the ref so debounce doesn't revert it
     lastPropagatedValue.current = newValue;
     setLocalValue(newValue);
-    onChange(newValue);
-  }, [onChange]);
+    dispatchUpdate(newValue);
+  }, [dispatchUpdate]);
+
 
   // Determine Type
   const isColor = typeHint === "color" ||
