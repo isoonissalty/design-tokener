@@ -1,13 +1,14 @@
 "use client";
 
-import { DesignTokenSystem, FoundationTokens, SemanticTokens } from "@/types/token-system";
+import { DesignTokenSystem } from "@/types/token-system";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, ChevronDown, ChevronRight } from "lucide-react";
+import { TokenCategoryList, Category } from "./TokenCategoryList";
+import { TokenField } from "./TokenField";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 interface GlobalTokenEditorProps {
   tokens: DesignTokenSystem;
@@ -16,53 +17,27 @@ interface GlobalTokenEditorProps {
 
 export function GlobalTokenEditor({ tokens, onChange }: GlobalTokenEditorProps) {
   const [activeTab, setActiveTab] = useState("foundation");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const updateToken = (path: string[], value: string) => {
-    // Deep clone to avoid mutation
     const newTokens = JSON.parse(JSON.stringify(tokens));
-
-    // Traverse to parent
     let current = newTokens;
     for (let i = 0; i < path.length - 1; i++) {
       current = current[path[i]];
     }
-
-    // Set value
     current[path[path.length - 1]] = value;
-
     onChange(newTokens);
   };
 
-  const TokenInput = ({ label, value, path, type = "text" }: { label: string, value: string, path: string[], type?: string }) => {
-    const isColor = type === "color" || /^#[0-9A-Fa-f]{6}$/.test(value);
-
-    return (
-      <div className="flex items-center gap-2 mb-2">
-        <Label className="w-32 truncate text-xs" title={label}>{label}</Label>
-        <div className="flex-1 flex gap-2">
-            {/* Color Preview/Picker if applicable and value is not an alias */}
-            {type === "color" && !value.startsWith("{") && (
-                <div className="relative">
-                    <Input
-                        type="color"
-                        value={value}
-                        onChange={(e) => updateToken(path, e.target.value)}
-                        className="w-8 h-8 p-0 border-0 rounded-md cursor-pointer shrink-0"
-                    />
-                </div>
-            )}
-            <Input
-                type="text"
-                value={value}
-                onChange={(e) => updateToken(path, e.target.value)}
-                className="h-8 text-xs font-mono"
-            />
-        </div>
-      </div>
-    );
+  const updateSettings = (key: string, value: string) => {
+      const newTokens = JSON.parse(JSON.stringify(tokens));
+      if (!newTokens.settings) {
+          newTokens.settings = {};
+      }
+      newTokens.settings[key] = value;
+      onChange(newTokens);
   };
 
-  // Simple collapsible section
   const CollapsibleSection = ({ title, children, defaultOpen = false }: { title: string, children: React.ReactNode, defaultOpen?: boolean }) => {
       const [isOpen, setIsOpen] = useState(defaultOpen);
       return (
@@ -84,19 +59,41 @@ export function GlobalTokenEditor({ tokens, onChange }: GlobalTokenEditorProps) 
       );
   };
 
-  const renderObjectFields = (obj: any, path: string[], typeHint?: string) => {
+  const renderObjectFields = (obj: any, path: string[]) => {
     return Object.entries(obj).map(([key, value]) => {
       const currentPath = [...path, key];
+
       if (typeof value === "string") {
-        return <TokenInput key={key} label={key} value={value} path={currentPath} type={typeHint || (key.includes("color") ? "color" : "text")} />;
+        return (
+            <TokenField
+                key={currentPath.join(".")}
+                label={key}
+                value={value}
+                onChange={(val) => updateToken(currentPath, val)}
+                path={currentPath}
+                tokens={tokens}
+            />
+        );
       } else if (typeof value === "object" && value !== null) {
           // Special case for Semantic Color (light/dark)
           if ("light" in value && "dark" in value) {
               return (
                   <div key={key} className="mb-4 border-l-2 pl-2 border-muted">
                       <Label className="text-sm font-semibold mb-2 block">{key}</Label>
-                      <TokenInput label="Light" value={(value as any).light} path={[...currentPath, "light"]} type="text" />
-                      <TokenInput label="Dark" value={(value as any).dark} path={[...currentPath, "dark"]} type="text" />
+                      <TokenField
+                        label="Light"
+                        value={(value as any).light}
+                        onChange={(val) => updateToken([...currentPath, "light"], val)}
+                        path={[...currentPath, "light"]}
+                        tokens={tokens}
+                      />
+                      <TokenField
+                        label="Dark"
+                        value={(value as any).dark}
+                        onChange={(val) => updateToken([...currentPath, "dark"], val)}
+                        path={[...currentPath, "dark"]}
+                        tokens={tokens}
+                      />
                   </div>
               );
           }
@@ -106,16 +103,22 @@ export function GlobalTokenEditor({ tokens, onChange }: GlobalTokenEditorProps) 
                   <div key={key} className="mb-4 border p-2 rounded-md">
                       <Label className="text-sm font-semibold mb-2 block border-b pb-1">{key}</Label>
                       {Object.entries(value).map(([prop, val]) => (
-                          <TokenInput key={prop} label={prop} value={val as string} path={[...currentPath, prop]} />
+                          <TokenField
+                            key={prop}
+                            label={prop}
+                            value={val as string}
+                            onChange={(v) => updateToken([...currentPath, prop], v)}
+                            path={[...currentPath, prop]}
+                            tokens={tokens}
+                          />
                       ))}
                   </div>
                )
           }
 
-         // Recursion for nested objects (like colors.gray)
          return (
              <CollapsibleSection title={key} key={key}>
-                 {renderObjectFields(value, currentPath, typeHint)}
+                 {renderObjectFields(value, currentPath)}
              </CollapsibleSection>
          );
       }
@@ -123,71 +126,93 @@ export function GlobalTokenEditor({ tokens, onChange }: GlobalTokenEditorProps) 
     });
   };
 
+  const foundationCategories: Category[] = [
+      { id: "colors", name: "Colors", description: "Global color palette" },
+      { id: "typography", name: "Typography", description: "Fonts, sizes, weights" },
+      { id: "spacing", name: "Spacing", description: "Margins, paddings, gaps" },
+      { id: "sizing", name: "Sizing", description: "Widths, heights, container sizes" },
+      { id: "radius", name: "Radius", description: "Border radius values" },
+      { id: "borderWidth", name: "Border Width", description: "Stroke widths" },
+  ];
+
+  const semanticCategories: Category[] = [
+      { id: "colors", name: "Colors", description: "Backgrounds, text, borders" },
+      { id: "typography", name: "Typography", description: "Headings, body, captions" },
+      { id: "shadow", name: "Shadow", description: "Elevation and depth" },
+      { id: "motion", name: "Motion", description: "Animations and transitions" },
+      { id: "opacity", name: "Opacity", description: "Transparency levels" },
+      { id: "zIndex", name: "Z-Index", description: "Stacking order" },
+  ];
+
+  const renderEditor = () => {
+      if (!selectedCategory) return null;
+
+      let data: any;
+      let pathPrefix: string[] = [];
+
+      if (activeTab === "foundation") {
+          data = tokens.foundation[selectedCategory as keyof typeof tokens.foundation];
+          pathPrefix = ["foundation", selectedCategory];
+      } else {
+          data = tokens.semantic[selectedCategory as keyof typeof tokens.semantic];
+          pathPrefix = ["semantic", selectedCategory];
+      }
+
+      if (!data) return <div className="p-4">No data found</div>;
+
+      return (
+          <div className="flex flex-col h-full">
+              <div className="flex items-center gap-2 mb-4 shrink-0">
+                  <Button variant="ghost" size="icon" onClick={() => setSelectedCategory(null)} className="h-8 w-8">
+                      <ArrowLeft className="w-4 h-4" />
+                  </Button>
+                  <h3 className="font-bold capitalize">{selectedCategory.replace(/([A-Z])/g, ' $1').trim()}</h3>
+              </div>
+              <div className="flex-1 overflow-y-auto pr-2">
+                  {renderObjectFields(data, pathPrefix)}
+              </div>
+          </div>
+      );
+  };
+
   return (
     <div className="h-full flex flex-col">
-       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-2 mb-4 shrink-0">
+       <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setSelectedCategory(null); }} className="flex-1 flex flex-col min-h-0">
+          <TabsList className="grid w-full grid-cols-3 mb-4 shrink-0">
+             <TabsTrigger value="settings">Settings</TabsTrigger>
              <TabsTrigger value="foundation">Foundation</TabsTrigger>
              <TabsTrigger value="semantic">Semantic</TabsTrigger>
           </TabsList>
 
-          <div className="flex-1 overflow-y-auto pr-2">
-              <TabsContent value="foundation" className="mt-0 space-y-4">
-                  <div className="w-full border rounded-md divide-y">
-                      {/* Foundation Colors */}
-                      <div className="p-2 bg-muted/20 font-semibold text-sm">Colors</div>
-                      <div className="p-2">
-                        {renderObjectFields(tokens.foundation.colors, ["foundation", "colors"], "color")}
-                      </div>
-
-                      {/* Typography */}
-                      <div className="p-2 bg-muted/20 font-semibold text-sm">Typography</div>
-                      <div className="p-2">
-                        {renderObjectFields(tokens.foundation.typography, ["foundation", "typography"], "text")}
-                      </div>
-
-                       {/* Spacing */}
-                       <div className="p-2 bg-muted/20 font-semibold text-sm">Spacing</div>
-                       <div className="p-2">
-                        {renderObjectFields(tokens.foundation.spacing, ["foundation", "spacing"], "text")}
-                      </div>
-
-                       {/* Other Foundation */}
-                       <div className="p-2 bg-muted/20 font-semibold text-sm">Sizing</div>
-                       <div className="p-2">
-                         {renderObjectFields(tokens.foundation.sizing, ["foundation", "sizing"], "text")}
+          <div className="flex-1 overflow-hidden">
+               <TabsContent value="settings" className="mt-0 space-y-4 p-1">
+                   <div className="space-y-4">
+                       <div>
+                           <Label className="text-sm font-semibold mb-2 block">Root Configuration</Label>
+                           <TokenField
+                                label="Base Font Size"
+                                value={tokens.settings?.baseFontSize || "16px"}
+                                onChange={(val) => updateSettings("baseFontSize", val)}
+                                path={["settings", "baseFontSize"]}
+                                tokens={tokens}
+                           />
+                           <p className="text-xs text-muted-foreground mt-1">
+                               Sets the root font size (html). 1rem will equal this value.
+                           </p>
                        </div>
-                       <div className="p-2 bg-muted/20 font-semibold text-sm">Radius</div>
-                       <div className="p-2">
-                         {renderObjectFields(tokens.foundation.radius, ["foundation", "radius"], "text")}
-                       </div>
-                  </div>
+                   </div>
+               </TabsContent>
+
+              <TabsContent value="foundation" className="h-full mt-0">
+                   {selectedCategory ? renderEditor() : (
+                       <TokenCategoryList categories={foundationCategories} onSelect={setSelectedCategory} />
+                   )}
               </TabsContent>
 
-              <TabsContent value="semantic" className="mt-0 space-y-4">
-                   <div className="w-full border rounded-md divide-y">
-                        {/* Semantic Colors */}
-                      <div className="p-2 bg-muted/20 font-semibold text-sm">Colors</div>
-                      <div className="p-2">
-                        {renderObjectFields(tokens.semantic.colors, ["semantic", "colors"])}
-                      </div>
-
-                      {/* Semantic Typography */}
-                      <div className="p-2 bg-muted/20 font-semibold text-sm">Typography</div>
-                      <div className="p-2">
-                        {renderObjectFields(tokens.semantic.typography, ["semantic", "typography"])}
-                      </div>
-
-                      {/* Others */}
-                      <div className="p-2 bg-muted/20 font-semibold text-sm">Shadow</div>
-                      <div className="p-2">
-                        {renderObjectFields(tokens.semantic.shadow, ["semantic", "shadow"])}
-                      </div>
-                       <div className="p-2 bg-muted/20 font-semibold text-sm">Motion</div>
-                       <div className="p-2">
-                        {renderObjectFields(tokens.semantic.motion, ["semantic", "motion"])}
-                      </div>
-                   </div>
+              <TabsContent value="semantic" className="h-full mt-0">
+                   {selectedCategory ? renderEditor() : (
+                       <TokenCategoryList categories={semanticCategories} onSelect={setSelectedCategory} />
+                   )}
               </TabsContent>
           </div>
        </Tabs>

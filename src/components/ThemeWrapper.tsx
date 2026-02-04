@@ -13,11 +13,13 @@ interface ThemeWrapperProps {
 export function ThemeWrapper({ tokens, children, className }: ThemeWrapperProps) {
 
   const { root: cssVarsRoot, dark: cssVarsDark } = generateTokenCss(tokens);
+  const baseFontSize = tokens.settings?.baseFontSize || "16px";
 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: `
         :root {
+          font-size: ${baseFontSize};
           ${cssVarsRoot.join("\n")}
         }
         .preview-root .dark {

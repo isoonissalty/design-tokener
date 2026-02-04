@@ -158,7 +158,12 @@ export interface ComponentTokens {
 
 // --- Root System ---
 
+export interface DesignTokenSettings {
+  baseFontSize: string;
+}
+
 export interface DesignTokenSystem {
+  settings: DesignTokenSettings;
   foundation: FoundationTokens;
   semantic: SemanticTokens;
   components: ComponentTokens;
