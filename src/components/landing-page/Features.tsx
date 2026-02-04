@@ -1,4 +1,5 @@
 import { CheckCircle2, Zap, Layout, ArrowRight } from "lucide-react";
+import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 
 export function Features() {
   const features = [
@@ -33,26 +34,32 @@ export function Features() {
 
         <div className="grid md:grid-cols-3 gap-8">
           {features.map((feature, i) => (
-            <div
+            <Card
               key={i}
-              className="bg-card text-card-foreground p-8 rounded-lg shadow-sm border border-border flex flex-col items-start"
+              className="flex flex-col items-start"
             >
-              <div className="text-primary mb-4">
-                {feature.icon}
-              </div>
-              <h3 className="text-xl font-semibold mb-2">
-                {feature.title}
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {feature.description}
-              </p>
-              <a
-                href="#"
-                className="inline-flex items-center mt-auto font-medium text-primary hover:underline"
-              >
-                Read more <ArrowRight className="w-4 h-4 ml-1" />
-              </a>
-            </div>
+              <CardHeader>
+                  <div className="text-primary mb-2">
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-xl font-semibold">
+                    {feature.title}
+                  </h3>
+              </CardHeader>
+              <CardContent>
+                  <p className="text-muted-foreground">
+                    {feature.description}
+                  </p>
+              </CardContent>
+              <CardFooter className="mt-auto">
+                  <a
+                    href="#"
+                    className="inline-flex items-center font-medium text-primary hover:underline"
+                  >
+                    Read more <ArrowRight className="w-4 h-4 ml-1" />
+                  </a>
+              </CardFooter>
+            </Card>
           ))}
         </div>
       </div>
