@@ -52,11 +52,72 @@ const config: Config = {
 				'5': 'hsl(var(--chart-5))'
 			}
 		},
+        spacing: {
+            '0': 'var(--space-0)',
+            '1': 'var(--space-1)',
+            '2': 'var(--space-2)',
+            '3': 'var(--space-3)',
+            '4': 'var(--space-4)',
+            '6': 'var(--space-6)',
+            '8': 'var(--space-8)',
+        },
+        fontSize: {
+            xs: 'var(--font-size-xs)',
+            sm: 'var(--font-size-sm)',
+            base: 'var(--font-size-base)',
+            lg: 'var(--font-size-lg)',
+            xl: 'var(--font-size-xl)',
+        },
+        fontFamily: {
+            sans: 'var(--font-family-sans)',
+            serif: 'var(--font-family-serif)',
+            mono: 'var(--font-family-mono)',
+        },
+        fontWeight: {
+            normal: 'var(--font-weight-regular)',
+            medium: 'var(--font-weight-medium)',
+            bold: 'var(--font-weight-bold)',
+        },
+        lineHeight: {
+            tight: 'var(--line-height-tight)',
+            normal: 'var(--line-height-normal)',
+            relaxed: 'var(--line-height-relaxed)',
+        },
+        letterSpacing: {
+            tight: 'var(--letter-spacing-tight)',
+            normal: 'var(--letter-spacing-normal)',
+            wide: 'var(--letter-spacing-wide)',
+        },
 		borderRadius: {
-			lg: 'var(--radius)',
-			md: 'calc(var(--radius) - 2px)',
-			sm: 'calc(var(--radius) - 4px)'
-		}
+            none: 'var(--radius-none)',
+			sm: 'var(--radius-sm)',
+            DEFAULT: 'var(--radius-md)',
+            md: 'var(--radius-md)',
+			lg: 'var(--radius-lg)',
+            full: 'var(--radius-full)',
+		},
+        borderWidth: {
+            DEFAULT: 'var(--border-width-1)',
+            '0': 'var(--border-width-0)',
+            '1': 'var(--border-width-1)',
+            '2': 'var(--border-width-2)',
+        },
+        width: {
+             xs: "var(--size-xs)",
+             sm: "var(--size-sm)",
+             md: "var(--size-md)",
+             lg: "var(--size-lg)",
+             xl: "var(--size-xl)",
+             container: "var(--size-container)",
+        },
+        maxWidth: {
+             xs: "var(--size-xs)",
+             sm: "var(--size-sm)",
+             md: "var(--size-md)",
+             lg: "var(--size-lg)",
+             xl: "var(--size-xl)",
+             container: "var(--size-container)",
+        }
 	}
   },
   plugins: [tailwindcssAnimate],

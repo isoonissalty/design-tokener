@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DesignTokenSystem } from "@/types/token-system";
 import { TokenColorPicker } from "./TokenColorPicker";
 import { TokenReferenceSelector } from "./TokenReferenceSelector";
@@ -80,7 +81,7 @@ export function TokenField({ label, value, onChange, path, tokens, typeHint }: T
   const isRadius = path.some(p => p.toLowerCase().includes("radius"));
   const isSizing = path.some(p => p.toLowerCase().includes("size") || p.toLowerCase().includes("width") || p.toLowerCase().includes("height"));
   const isTypographySize = path.some(p => p.toLowerCase().includes("fontsize"));
-  const isTypographyWeight = path.some(p => p.toLowerCase().includes("fontweight"));
+  const isTypographyWeight = path.some(p => p.toLowerCase().includes("fontweight") || p.toLowerCase().includes("weight"));
   const isFontFamily = path.some(p => p.toLowerCase().includes("fontfamily"));
 
   // Foundation tokens are definitions, Semantic/Component tokens are references.
@@ -113,6 +114,27 @@ export function TokenField({ label, value, onChange, path, tokens, typeHint }: T
               </div>
           );
       }
+
+      // Font Weight Dropdown
+      if (isTypographyWeight) {
+          const weights = ["100", "200", "300", "400", "500", "600", "700", "800", "900"];
+          return (
+              <div className="flex items-center gap-2 mb-2">
+                  <Label className="w-32 truncate text-xs" title={label}>{label}</Label>
+                  <div className="flex-1">
+                      <Select value={localValue} onValueChange={handleImmediateChange}>
+                        <SelectTrigger className="h-8 text-xs w-full bg-white">
+                          <SelectValue placeholder="Select weight" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {weights.map(w => <SelectItem key={w} value={w} className="text-xs">{w}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                  </div>
+              </div>
+          );
+      }
+
       // Default text input for other foundation values
        return (
           <div className="flex items-center gap-2 mb-2">
