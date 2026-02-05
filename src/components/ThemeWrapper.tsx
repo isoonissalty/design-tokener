@@ -18,7 +18,7 @@ export function ThemeWrapper({ tokens, children, className }: ThemeWrapperProps)
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: `
-        :root {
+        .preview-root {
           font-size: ${baseFontSize};
           ${cssVarsRoot.join("\n")}
         }
@@ -27,7 +27,7 @@ export function ThemeWrapper({ tokens, children, className }: ThemeWrapperProps)
         }
 
         /* Map V1 Tokens to Shadcn/Tailwind Theme Variables */
-        :root {
+        .preview-root {
             --background: var(--color-bg-canvas);
             --foreground: var(--color-text-primary);
 
@@ -92,7 +92,7 @@ export function ThemeWrapper({ tokens, children, className }: ThemeWrapperProps)
             --radius: var(--radius-md);
         }
       `}} />
-      <div className={`${className} preview-area`}>
+      <div className={`${className} preview-root preview-area`}>
         {children}
       </div>
     </>
