@@ -20,6 +20,8 @@ export function ThemeWrapper({ tokens, children, className }: ThemeWrapperProps)
       <style dangerouslySetInnerHTML={{ __html: `
         :root {
           font-size: ${baseFontSize};
+        }
+        .preview-root {
           ${cssVarsRoot.join("\n")}
         }
         .preview-root .dark {
@@ -27,7 +29,7 @@ export function ThemeWrapper({ tokens, children, className }: ThemeWrapperProps)
         }
 
         /* Map V1 Tokens to Shadcn/Tailwind Theme Variables */
-        :root {
+        .preview-root {
             --background: var(--color-bg-canvas);
             --foreground: var(--color-text-primary);
 
