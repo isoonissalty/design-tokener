@@ -18,7 +18,7 @@ export function ThemeWrapper({ tokens, children, className }: ThemeWrapperProps)
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: `
-        :root {
+        .preview-root {
           font-size: ${baseFontSize};
         }
         .preview-root {
@@ -94,7 +94,7 @@ export function ThemeWrapper({ tokens, children, className }: ThemeWrapperProps)
             --radius: var(--radius-md);
         }
       `}} />
-      <div className={`${className} preview-area`}>
+      <div className={`${className} preview-root preview-area`}>
         {children}
       </div>
     </>
