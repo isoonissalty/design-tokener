@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, current } from '@reduxjs/toolkit';
 import { DesignTokenSystem } from '@/types/token-system';
 import { defaultDesignTokens } from '@/lib/token-defaults';
 
@@ -26,19 +26,20 @@ export const themeSlice = createSlice({
     updateToken: (state, action: PayloadAction<{ path: string[]; value: string }>) => {
         const { path, value } = action.payload;
 
-        // Deep clone to ensure immutability reference change for the new state
-        // Although Immer handles this, we need to push the *current* state to past before modifying
-        state.past.push(JSON.parse(JSON.stringify(state.present)));
+        // Push current state snapshot to history before mutation
+        // Using current() instead of JSON.parse(JSON.stringify()) for performance
+        state.past.push(current(state.present));
         state.future = [];
 
-        let current: any = state.present;
+        let currentDraft: any = state.present;
         for (let i = 0; i < path.length - 1; i++) {
-            current = current[path[i]];
+            currentDraft = currentDraft[path[i]];
         }
-        current[path[path.length - 1]] = value;
+        currentDraft[path[path.length - 1]] = value;
     },
     updateSettings: (state, action: PayloadAction<{ key: string; value: string }>) => {
-        state.past.push(JSON.parse(JSON.stringify(state.present)));
+        // Push current state snapshot to history before mutation
+        state.past.push(current(state.present));
         state.future = [];
 
         if (!state.present.settings) {
