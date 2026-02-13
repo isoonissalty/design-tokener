@@ -151,7 +151,7 @@ export function GlobalTokenEditor() {
       return (
           <div className="flex flex-col h-full">
               <div className="flex items-center gap-2 mb-4 shrink-0">
-                  <Button variant="ghost" size="icon" onClick={() => dispatch(setSelectedEditorCategory(null))} className="h-8 w-8">
+                  <Button variant="ghost" size="icon" onClick={() => dispatch(setSelectedEditorCategory(null))} className="h-8 w-8" aria-label="Back to categories">
                       <ArrowLeft className="w-4 h-4" />
                   </Button>
                   <h3 className="font-bold capitalize">{selectedCategory.replace(/([A-Z])/g, ' $1').trim()}</h3>

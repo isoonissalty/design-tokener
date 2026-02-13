@@ -46,6 +46,7 @@ export default function Home() {
                                 size="icon"
                                 onClick={() => dispatch(setPreviewOpen(false))}
                                 className="hover:bg-white/10 text-white"
+                                aria-label="Close preview"
                             >
                                 <X className="w-5 h-5" />
                             </Button>
