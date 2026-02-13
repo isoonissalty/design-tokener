@@ -10,6 +10,42 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateToken } from "@/store/features/themeSlice";
 import { setSelectedComponentId } from "@/store/features/uiSlice";
 
+interface TokenInputProps {
+    label: string;
+    value: string;
+    path: string[];
+    type?: string;
+    onUpdate: (path: string[], value: string) => void;
+}
+
+const TokenInput = ({ label, value, path, type = "text", onUpdate }: TokenInputProps) => {
+    // Check if alias
+    const isAlias = value.startsWith("{");
+    const isColor = (type === "color" || /^#[0-9A-Fa-f]{6}$/.test(value)) && !isAlias;
+
+    return (
+       <div className="space-y-1">
+           <Label className="text-xs">{label}</Label>
+           <div className="flex gap-2">
+                {isColor && (
+                   <Input
+                       type="color"
+                       value={value}
+                       onChange={(e) => onUpdate(path, e.target.value)}
+                       className="w-8 h-8 p-0 border-0 rounded-md cursor-pointer shrink-0"
+                   />
+               )}
+               <Input
+                   type="text"
+                   value={value}
+                   onChange={(e) => onUpdate(path, e.target.value)}
+                   className="h-8 text-xs font-mono"
+               />
+           </div>
+       </div>
+    );
+ };
+
 export function ButtonComponentEditor() {
   const dispatch = useAppDispatch();
   const tokens = useAppSelector((state) => state.theme.present);
@@ -22,40 +58,12 @@ export function ButtonComponentEditor() {
     }));
   };
 
-  const TokenInput = ({ label, value, path, type = "text" }: { label: string, value: string, path: string[], type?: string }) => {
-     // Check if alias
-     const isAlias = value.startsWith("{");
-     const isColor = (type === "color" || /^#[0-9A-Fa-f]{6}$/.test(value)) && !isAlias;
-
-     return (
-        <div className="space-y-1">
-            <Label className="text-xs">{label}</Label>
-            <div className="flex gap-2">
-                 {isColor && (
-                    <Input
-                        type="color"
-                        value={value}
-                        onChange={(e) => updateButtonToken(path, e.target.value)}
-                        className="w-8 h-8 p-0 border-0 rounded-md cursor-pointer shrink-0"
-                    />
-                )}
-                <Input
-                    type="text"
-                    value={value}
-                    onChange={(e) => updateButtonToken(path, e.target.value)}
-                    className="h-8 text-xs font-mono"
-                />
-            </div>
-        </div>
-     );
-  };
-
   const { button } = tokens.components;
 
   return (
     <div className="space-y-6 h-full flex flex-col">
        <div className="flex items-center gap-2 mb-2">
-            <Button variant="ghost" size="icon" onClick={() => dispatch(setSelectedComponentId(null))} className="shrink-0 h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={() => dispatch(setSelectedComponentId(null))} className="shrink-0 h-8 w-8" aria-label="Back to component list">
                <ArrowLeft className="w-4 h-4" />
             </Button>
          <h3 className="text-lg font-semibold">Button</h3>
@@ -87,8 +95,8 @@ export function ButtonComponentEditor() {
             <div className="space-y-2 border-l-2 pl-2">
                  <Label className="text-sm font-semibold">Default</Label>
                  <div className="grid grid-cols-2 gap-2">
-                     <TokenInput label="Light" value={button.bg.default.light} path={["bg", "default", "light"]} />
-                     <TokenInput label="Dark" value={button.bg.default.dark} path={["bg", "default", "dark"]} />
+                     <TokenInput label="Light" value={button.bg.default.light} path={["bg", "default", "light"]} onUpdate={updateButtonToken} />
+                     <TokenInput label="Dark" value={button.bg.default.dark} path={["bg", "default", "dark"]} onUpdate={updateButtonToken} />
                  </div>
             </div>
 
@@ -96,8 +104,8 @@ export function ButtonComponentEditor() {
             <div className="space-y-2 border-l-2 pl-2">
                  <Label className="text-sm font-semibold">Hover</Label>
                  <div className="grid grid-cols-2 gap-2">
-                     <TokenInput label="Light" value={button.bg.hover.light} path={["bg", "hover", "light"]} />
-                     <TokenInput label="Dark" value={button.bg.hover.dark} path={["bg", "hover", "dark"]} />
+                     <TokenInput label="Light" value={button.bg.hover.light} path={["bg", "hover", "light"]} onUpdate={updateButtonToken} />
+                     <TokenInput label="Dark" value={button.bg.hover.dark} path={["bg", "hover", "dark"]} onUpdate={updateButtonToken} />
                  </div>
             </div>
 
@@ -105,8 +113,8 @@ export function ButtonComponentEditor() {
             <div className="space-y-2 border-l-2 pl-2">
                  <Label className="text-sm font-semibold">Active</Label>
                  <div className="grid grid-cols-2 gap-2">
-                     <TokenInput label="Light" value={button.bg.active.light} path={["bg", "active", "light"]} />
-                     <TokenInput label="Dark" value={button.bg.active.dark} path={["bg", "active", "dark"]} />
+                     <TokenInput label="Light" value={button.bg.active.light} path={["bg", "active", "light"]} onUpdate={updateButtonToken} />
+                     <TokenInput label="Dark" value={button.bg.active.dark} path={["bg", "active", "dark"]} onUpdate={updateButtonToken} />
                  </div>
             </div>
 
@@ -114,8 +122,8 @@ export function ButtonComponentEditor() {
              <div className="space-y-2 border-l-2 pl-2">
                  <Label className="text-sm font-semibold">Disabled</Label>
                  <div className="grid grid-cols-2 gap-2">
-                     <TokenInput label="Light" value={button.bg.disabled.light} path={["bg", "disabled", "light"]} />
-                     <TokenInput label="Dark" value={button.bg.disabled.dark} path={["bg", "disabled", "dark"]} />
+                     <TokenInput label="Light" value={button.bg.disabled.light} path={["bg", "disabled", "light"]} onUpdate={updateButtonToken} />
+                     <TokenInput label="Dark" value={button.bg.disabled.dark} path={["bg", "disabled", "dark"]} onUpdate={updateButtonToken} />
                  </div>
             </div>
         </div>
@@ -125,8 +133,8 @@ export function ButtonComponentEditor() {
             <div className="space-y-2 border-l-2 pl-2">
                  <Label className="text-sm font-semibold">Default</Label>
                  <div className="grid grid-cols-2 gap-2">
-                     <TokenInput label="Light" value={button.text.default.light} path={["text", "default", "light"]} />
-                     <TokenInput label="Dark" value={button.text.default.dark} path={["text", "default", "dark"]} />
+                     <TokenInput label="Light" value={button.text.default.light} path={["text", "default", "light"]} onUpdate={updateButtonToken} />
+                     <TokenInput label="Dark" value={button.text.default.dark} path={["text", "default", "dark"]} onUpdate={updateButtonToken} />
                  </div>
             </div>
         </div>
@@ -134,10 +142,10 @@ export function ButtonComponentEditor() {
         <div className="space-y-4">
             <h4 className="text-sm font-semibold text-muted-foreground">Shape & Spacing</h4>
             <div className="grid grid-cols-2 gap-4">
-                 <TokenInput label="Radius" value={button.radius} path={["radius"]} />
+                 <TokenInput label="Radius" value={button.radius} path={["radius"]} onUpdate={updateButtonToken} />
                  <div className="col-span-2 grid grid-cols-2 gap-4">
-                    <TokenInput label="Padding X" value={button.padding.x} path={["padding", "x"]} />
-                    <TokenInput label="Padding Y" value={button.padding.y} path={["padding", "y"]} />
+                    <TokenInput label="Padding X" value={button.padding.x} path={["padding", "x"]} onUpdate={updateButtonToken} />
+                    <TokenInput label="Padding Y" value={button.padding.y} path={["padding", "y"]} onUpdate={updateButtonToken} />
                  </div>
             </div>
         </div>

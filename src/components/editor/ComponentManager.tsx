@@ -23,7 +23,7 @@ export function ComponentManager() {
     return (
       <div className="flex flex-col h-full">
          <div className="flex items-center gap-2 mb-4">
-             <Button variant="ghost" size="icon" onClick={() => dispatch(setSelectedComponentId(null))} className="shrink-0 h-8 w-8">
+             <Button variant="ghost" size="icon" onClick={() => dispatch(setSelectedComponentId(null))} className="shrink-0 h-8 w-8" aria-label="Back to component list">
                <ArrowLeft className="w-4 h-4" />
              </Button>
              <h3 className="font-bold capitalize">{selectedId}</h3>

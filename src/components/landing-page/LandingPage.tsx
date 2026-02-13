@@ -23,7 +23,7 @@ export const LandingPage = memo(function LandingPage({ isDark, toggleTheme }: La
                 <a href="#" className="hover:text-foreground transition-colors">Pricing</a>
             </nav>
             <div className="flex gap-4 items-center">
-                <Button variant="ghost" size="icon" onClick={toggleTheme} className="mr-2">
+                <Button variant="ghost" size="icon" onClick={toggleTheme} className="mr-2" aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}>
                     {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 </Button>
                 <Button variant="ghost" size="sm">Log in</Button>

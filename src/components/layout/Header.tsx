@@ -49,19 +49,19 @@ export function Header() {
       <div className="flex items-center gap-4">
         <h1 className="text-xl font-bold">Design Token Builder</h1>
         <div className="flex items-center gap-1 border-l pl-4 ml-2 h-6">
-          <Button variant="ghost" size="icon" onClick={() => dispatch(undo())} disabled={!canUndo} title="Undo">
+          <Button variant="ghost" size="icon" onClick={() => dispatch(undo())} disabled={!canUndo} title="Undo" aria-label="Undo">
             <Undo2 className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => dispatch(redo())} disabled={!canRedo} title="Redo">
+          <Button variant="ghost" size="icon" onClick={() => dispatch(redo())} disabled={!canRedo} title="Redo" aria-label="Redo">
             <Redo2 className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => dispatch(reset())} title="Reset to Default">
+          <Button variant="ghost" size="icon" onClick={() => dispatch(reset())} title="Reset to Default" aria-label="Reset to Default">
             <RotateCcw className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleSave} title="Save to Local Storage">
+          <Button variant="ghost" size="icon" onClick={handleSave} title="Save to Local Storage" aria-label="Save to Local Storage">
             <Save className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleLoad} title="Load from Local Storage">
+          <Button variant="ghost" size="icon" onClick={handleLoad} title="Load from Local Storage" aria-label="Load from Local Storage">
             <FolderOpen className="w-4 h-4" />
           </Button>
         </div>
