@@ -5,7 +5,8 @@ import { ThemeWrapper } from "@/components/ThemeWrapper";
 import { Button } from "@/components/ui/button";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { setPreviewTemplate, togglePreviewTheme } from "@/store/features/uiSlice";
-import { PreviewContent, PreviewTemplateId } from "./PreviewContent";
+import { PreviewContent } from "./PreviewContent";
+import { isPreviewTemplateId, previewTemplateIds, previewTemplates } from "@/lib/preview-templates";
 
 export function PreviewToolbar() {
   const dispatch = useAppDispatch();
@@ -13,14 +14,14 @@ export function PreviewToolbar() {
   const template = useAppSelector(state => state.ui.previewTemplate);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-background px-4 py-3 shrink-0">
-      <div className="flex items-center gap-3">
-        <span className="hidden sm:inline text-xs font-semibold uppercase tracking-wider text-muted-foreground">Live preview</span>
+    <div className="preview-toolbar flex flex-wrap items-center justify-between gap-2 border-b bg-background px-4 py-3 shrink-0">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <span className="preview-toolbar-label shrink-0 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Live preview</span>
         <label className="sr-only" htmlFor="preview-template">Preview template</label>
-        <select id="preview-template" value={template} onChange={event => dispatch(setPreviewTemplate(event.target.value as PreviewTemplateId))} className="h-8 max-w-full rounded-md border border-input bg-background px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          <option value="landing">Landing page</option>
-          <option value="dashboard">Dashboard</option>
-          <option value="pricing">Pricing page</option>
+        <select id="preview-template" value={template} onChange={event => {
+          if (isPreviewTemplateId(event.target.value)) dispatch(setPreviewTemplate(event.target.value));
+        }} className="h-8 min-w-0 max-w-full rounded-md border border-input bg-background px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          {previewTemplateIds.map(id => <option key={id} value={id}>{previewTemplates[id].label}</option>)}
         </select>
       </div>
       <Button variant="outline" size="sm" onClick={() => dispatch(togglePreviewTheme())} aria-label={isDark ? "Switch preview to light mode" : "Switch preview to dark mode"}>

@@ -1,13 +1,14 @@
 import { createSlice, isAnyOf, PayloadAction } from '@reduxjs/toolkit';
 import type { GenerationCategory, GenerationResult } from '@/types/generation';
 import { applyGeneration, load, redo, reset, setTokens, undo } from './themeSlice';
+import type { PreviewTemplateId } from '@/lib/preview-templates';
 
 interface UiState {
   activeMainTab: 'tokens' | 'components' | 'templates' | 'generate';
   generatorCategory: GenerationCategory;
   isPreviewOpen: boolean;
   isPreviewDark: boolean;
-  previewTemplate: 'landing' | 'dashboard' | 'pricing';
+  previewTemplate: PreviewTemplateId;
 
   // Editor State
   activeEditorTab: string; // 'settings' | 'foundation' | 'semantic'
