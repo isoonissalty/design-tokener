@@ -8,14 +8,18 @@ Generate palettes and dimension scales, save reusable themes in your browser, an
 
 ## Run locally
 
-Requires Git, npm, and Node.js 22.15+ (Node.js 24 recommended). The test loaders use Node's `registerHooks` API, so older Node.js releases cannot run the full test suite.
+Requires Git, npm, and Node.js 26.13.1 (stable LTS). The repository pins this version in `.nvmrc` and `.node-version`. With [nvm](https://github.com/nvm-sh/nvm) installed:
 
 ```bash
 git clone https://github.com/isoonissalty/design-tokener.git
 cd design-tokener
+nvm install
+nvm use
 npm ci
 npm run dev
 ```
+
+If you use another Node.js installation or version manager, select Node.js 26.13.1 before running the npm commands.
 
 Open [http://localhost:3000](http://localhost:3000). The editor and preview resize side by side on desktop and stack vertically on smaller screens. No API keys, database, or environment variables are required for local development. Next.js fetches Geist fonts from Google during development and production builds, so allow network access for those requests.
 
