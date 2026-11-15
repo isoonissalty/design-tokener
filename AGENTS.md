@@ -4,7 +4,7 @@ Design Token Builder is a Next.js/React app for editing, previewing, and exporti
 
 ## Environment and commands
 
-Use npm with the committed `package-lock.json`. Node.js 24 is recommended; the test loader requires Node.js 22.15+ on the Node.js 22 release line.
+Use Node.js 26.13.1 (stable LTS), pinned in `.nvmrc` and `.node-version`, and npm with the committed `package-lock.json`. With nvm, run `nvm install` and `nvm use` before installing dependencies.
 
 - Install dependencies: `npm ci`.
 - Start development: `npm run dev`.

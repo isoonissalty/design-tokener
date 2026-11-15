@@ -10,7 +10,7 @@ For a feature, describe the design task it would support and the behavior you ex
 
 ## Set up locally
 
-Use Node.js 22.15 or newer; Node.js 24 is recommended. The test loader uses `node:module.registerHooks`, which requires Node.js 22.15+ on the Node.js 22 release line. Use npm and the committed `package-lock.json`.
+Use Node.js 26.13.1 (stable LTS), pinned in `.nvmrc` and `.node-version`, with npm and the committed `package-lock.json`. The setup below assumes [nvm](https://github.com/nvm-sh/nvm) is installed; other version managers should select the same Node.js version.
 
 1. Fork the [repository](https://github.com/isoonissalty/design-tokener) on GitHub.
 2. Clone your fork, replacing `YOUR-USERNAME` below, and create a branch for your change:
@@ -18,6 +18,8 @@ Use Node.js 22.15 or newer; Node.js 24 is recommended. The test loader uses `nod
    ```bash
    git clone https://github.com/YOUR-USERNAME/design-tokener.git
    cd design-tokener
+   nvm install
+   nvm use
    git switch -c describe-your-change
    npm ci
    npm run dev
