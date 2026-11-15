@@ -6,15 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/store/hooks";
 import { setTokens } from "@/store/features/themeSlice";
 import type { DesignTokenSystem } from "@/types/token-system";
-import { exportThemeCss, exportThemeJson, exportTailwindConfig, importTheme } from "@/lib/theme-io";
-
-type ExportFormat = "css4" | "css3" | "config3" | "json";
-
-function exportFile(tokens: DesignTokenSystem, format: ExportFormat) {
-  if (format === "json") return { content: exportThemeJson(tokens), name: "design-tokens.json", type: "application/json" };
-  if (format === "config3") return { content: exportTailwindConfig(tokens), name: "tailwind.config.cjs", type: "text/javascript" };
-  return { content: exportThemeCss(tokens, format === "css3" ? 3 : 4), name: "theme.css", type: "text/css" };
-}
+import { importTheme } from "@/lib/theme-io";
+import { exportFile, type ExportFormat } from "@/lib/theme-export";
 
 /** Import and export share a dialog so each download has an explicit format. */
 export function ExportButton({ tokens }: { tokens: DesignTokenSystem }) {
@@ -105,9 +98,10 @@ export function ExportButton({ tokens }: { tokens: DesignTokenSystem }) {
                   <option value="css3">Tailwind CSS v3 — theme.css</option>
                   <option value="config3">Tailwind CSS v3 — tailwind.config.cjs</option>
                   <option value="json">Editable theme — JSON</option>
+                  <option value="design-md">Design contract — DESIGN.md</option>
                 </select>
               </div>
-              <p className="text-sm text-muted-foreground">{format === "json" ? "Includes every token and both color modes. Import this file to restore the theme exactly." : format === "css4" ? "Includes the Tailwind import, utility mappings, and light/dark variables. Use as your Tailwind v4 stylesheet." : "For Tailwind v3, download both theme.css and tailwind.config.cjs. Import the CSS in your app and use the config for utility mappings."}</p>
+              <p className="text-sm text-muted-foreground">{format === "design-md" ? "A design contract with your current tokens, both color modes, and usage guidance. Preview, copy, or download DESIGN.md for your project." : format === "json" ? "Includes every token and both color modes. Import this file to restore the theme exactly." : format === "css4" ? "Includes the Tailwind import, utility mappings, and light/dark variables. Use as your Tailwind v4 stylesheet." : "For Tailwind v3, download both theme.css and tailwind.config.cjs. Import the CSS in your app and use the config for utility mappings."}</p>
               <label htmlFor="theme-export-preview" className="sr-only">Export preview</label>
               <textarea id="theme-export-preview" readOnly value={file.content} spellCheck={false} className="h-64 w-full resize-y rounded-md border bg-muted/30 p-3 font-mono text-xs" />
               {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
