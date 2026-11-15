@@ -7,6 +7,7 @@ export interface ThemeTemplate {
   description: string;
   swatches: string[];
   tokens: DesignTokenSystem;
+  paletteName?: string;
 }
 
 interface TemplateOptions {

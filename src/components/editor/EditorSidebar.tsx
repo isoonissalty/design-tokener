@@ -27,7 +27,7 @@ export function EditorSidebar() {
           <TabsContent value="tokens" className="h-full mt-0"><GlobalTokenEditor /></TabsContent>
           <TabsContent value="components" className="h-full mt-0"><ComponentManager /></TabsContent>
           <TabsContent value="templates" className="h-full mt-0"><ThemeTemplates /></TabsContent>
-          <TabsContent value="generate" className="h-full mt-0"><GeneratorPanel /></TabsContent>
+          <TabsContent value="generate" forceMount className="h-full mt-0"><GeneratorPanel /></TabsContent>
         </div>
       </Tabs>
     </aside>

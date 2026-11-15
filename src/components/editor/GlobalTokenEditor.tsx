@@ -48,6 +48,13 @@ export function GlobalTokenEditor() {
   const tokens = useAppSelector((state) => state.theme.present);
   const activeTab = useAppSelector((state) => state.ui.activeEditorTab);
   const selectedCategory = useAppSelector((state) => state.ui.selectedEditorCategory);
+  const focusedPalette = useAppSelector((state) => state.ui.focusedPalette);
+  const generatedColors = tokens.generation?.colors;
+  const focusedPalettes = focusedPalette ? [focusedPalette] : [];
+  if (focusedPalette && (generatedColors?.parameters.primaryName || 'primary') === focusedPalette) {
+    const secondaryName = generatedColors?.parameters.secondaryName || 'secondary';
+    if (generatedColors && secondaryName !== focusedPalette) focusedPalettes.push(secondaryName);
+  }
 
 
 
@@ -56,7 +63,13 @@ export function GlobalTokenEditor() {
   }, [dispatch]);
 
   const renderObjectFields = (obj: object, path: string[]) => {
-    return Object.entries(obj).map(([key, value]) => {
+    const isColorPaletteList = path.join('.') === 'foundation.colors';
+    const entries = Object.entries(obj);
+    if (isColorPaletteList && focusedPalettes.length) {
+      const order = (name: string) => focusedPalettes.includes(name) ? focusedPalettes.indexOf(name) : focusedPalettes.length;
+      entries.sort(([first], [second]) => order(first) - order(second));
+    }
+    return entries.map(([key, value]) => {
       const currentPath = [...path, key];
 
       if (typeof value === "string") {
@@ -109,7 +122,7 @@ export function GlobalTokenEditor() {
           }
 
          return (
-             <CollapsibleSection title={key} key={key}>
+             <CollapsibleSection title={key} key={key} defaultOpen={isColorPaletteList && focusedPalettes.includes(key)}>
                  {renderObjectFields(value, currentPath)}
              </CollapsibleSection>
          );
