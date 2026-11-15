@@ -1,6 +1,6 @@
 "use client";
 
-import { DesignTokenSystem } from "@/types/token-system";
+import type { DesignTokenSettings } from "@/types/token-system";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ const CollapsibleSection = ({ title, children, defaultOpen = false }: Collapsibl
               variant="ghost"
               className="w-full justify-start p-2 h-auto hover:bg-muted/50 rounded-none font-medium text-sm"
               onClick={() => setIsOpen(!isOpen)}
+              aria-expanded={isOpen}
             >
                 {isOpen ? <ChevronDown className="w-4 h-4 mr-2" /> : <ChevronRight className="w-4 h-4 mr-2" />}
                 {title}
@@ -47,11 +48,11 @@ export function GlobalTokenEditor() {
 
 
 
-  const handleUpdateSettings = useCallback((key: string, value: string) => {
+  const handleUpdateSettings = useCallback((key: keyof DesignTokenSettings, value: string) => {
     dispatch(updateSettings({ key, value }));
   }, [dispatch]);
 
-  const renderObjectFields = (obj: any, path: string[]) => {
+  const renderObjectFields = (obj: object, path: string[]) => {
     return Object.entries(obj).map(([key, value]) => {
       const currentPath = [...path, key];
 
@@ -73,13 +74,13 @@ export function GlobalTokenEditor() {
                       <Label className="text-sm font-semibold mb-2 block">{key}</Label>
                       <TokenField
                         label="Light"
-                        value={(value as any).light}
+                        value={String(value.light)}
                         path={[...currentPath, "light"]}
                         tokens={tokens}
                       />
                       <TokenField
                         label="Dark"
-                        value={(value as any).dark}
+                        value={String(value.dark)}
                         path={[...currentPath, "dark"]}
                         tokens={tokens}
                       />
@@ -135,7 +136,7 @@ export function GlobalTokenEditor() {
   const renderEditor = () => {
       if (!selectedCategory) return null;
 
-      let data: any;
+      let data: object | undefined;
       let pathPrefix: string[] = [];
 
       if (activeTab === "foundation") {
@@ -149,14 +150,14 @@ export function GlobalTokenEditor() {
       if (!data) return <div className="p-4">No data found</div>;
 
       return (
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full min-h-0">
               <div className="flex items-center gap-2 mb-4 shrink-0">
                   <Button variant="ghost" size="icon" onClick={() => dispatch(setSelectedEditorCategory(null))} className="h-8 w-8" aria-label="Back to categories">
                       <ArrowLeft className="w-4 h-4" />
                   </Button>
                   <h3 className="font-bold capitalize">{selectedCategory.replace(/([A-Z])/g, ' $1').trim()}</h3>
               </div>
-              <div className="flex-1 overflow-y-auto pr-2">
+              <div className="flex-1 min-h-0 overflow-y-auto pr-2">
                   {renderObjectFields(data, pathPrefix)}
               </div>
           </div>
@@ -185,7 +186,7 @@ export function GlobalTokenEditor() {
                                 tokens={tokens}
                            />
                            <p className="text-xs text-muted-foreground mt-1">
-                               Sets the root font size (html). 1rem will equal this value.
+                               Scales rem-based token values in the preview. Exported CSS applies this size to html, so 1rem equals this value.
                            </p>
                        </div>
                    </div>

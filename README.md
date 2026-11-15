@@ -1,24 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Design Token Builder
 
-## Getting Started
+Build a Tailwind theme from editable foundation, semantic, and component tokens. Preview the result in light and dark mode across landing page, dashboard, and pricing layouts.
 
-First, run the development server:
+## Run locally
+
+Requires Node.js 22.15+ (Node.js 24 recommended).
 
 ```bash
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. The editor and preview resize side by side on desktop and stack vertically on smaller screens.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Create and refine a theme
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Templates:** apply one of eight complete starting themes. Each includes both color modes, typography, spacing, and button styles.
+- **Palette:** choose a hex seed and palette name to generate shades 50–950. Shade 500 retains your seed. Optionally apply the palette to primary colors, focus rings, and buttons. The generator chooses button tones and foregrounds with at least 4.5:1 contrast.
+- **Tokens:** edit individual foundation and semantic values. Generated palettes appear under Foundation → Colors.
+- **Components:** customize button colors, interaction states, radius, and padding. Other listed components inherit the global tokens.
+- **Preview:** select a layout, toggle light/dark mode, or open the full screen preview. Dashboard and pricing controls can be tried interactively.
+
+Template, palette, import, reset, and saved-theme restoration are undoable. Undo/redo retains up to 100 changes. Ctrl/⌘ Z and Ctrl/⌘ Shift Z work outside text inputs. Save and restore use this browser's local storage; use JSON export to keep a portable copy.
+
+## Import and export
+
+**Import Theme** accepts a `.json`/`.css` file or pasted text. JSON restores the full token system. CSS merges recognized `:root`, `.dark`, and Tailwind `@theme` declarations into the current theme. Hex, HSL, RGB, and modern CSS color values remain editable. JavaScript configuration imports are not executed; use CSS or JSON instead.
+
+**Export Theme** offers a code preview, copy, and download:
+
+| Format | Usage |
+| --- | --- |
+| Tailwind CSS v4 | Use `theme.css` as your Tailwind stylesheet. It includes the Tailwind import, utility mappings, and dark variant. |
+| Tailwind CSS v3 | Download both `theme.css` and `tailwind.config.cjs`. Import the CSS alongside your Tailwind directives and use the config's theme mappings. |
+| JSON | Includes every token and both modes for exact restoration and further editing. |
+
+CSS imports update supported matching variables and retain the other tokens. JSON is the format for lossless backups. Review import errors in the dialog; an invalid import leaves the current theme intact.
+
+## Verification
+
+```bash
+npm test
+npm run typecheck
+npm run lint
+npm run build
+```
+
+The Node test suite covers token reference generation, color preservation, palette/contrast behavior, immutable templates, import/export, and undo/redo history. Production startup uses `npm start`. The build fetches Geist fonts through Next.js.
 
 ## Dependency security
 
@@ -26,17 +54,3 @@ Run `npm ci` to install the audited lockfile and `npm audit --include=dev --audi
 
 The scoped `@typescript-eslint/typescript-estree` override keeps its `minimatch` dependency on a patched 11.x release for [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249). Remove the override when the upstream parser uses a patched version in its own dependency range.
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

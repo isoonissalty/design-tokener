@@ -7,9 +7,10 @@ interface TokenColorPickerProps {
   value: string;
   onChange: (value: string) => void;
   tokens: DesignTokenSystem;
+  ariaLabel?: string;
 }
 
-export const TokenColorPicker = memo(function TokenColorPicker({ value, onChange, tokens }: TokenColorPickerProps) {
+export const TokenColorPicker = memo(function TokenColorPicker({ value, onChange, tokens, ariaLabel = "Color" }: TokenColorPickerProps) {
 
   // Parse the current value to extract family and shade
   const { selectedFamily, selectedShade } = useMemo(() => {
@@ -19,15 +20,12 @@ export const TokenColorPicker = memo(function TokenColorPicker({ value, onChange
     if (value.startsWith("{color.") && value.endsWith("}")) {
       const parts = value.slice(1, -1).split(".");
       // format: color.blue.500
-      if (parts.length === 3) {
+      if (parts.length === 3 && tokens.foundation.colors[parts[1]]?.[parts[2]]) {
         family = parts[1];
         shade = parts[2];
-      } else if (parts.length === 2 && parts[1] === "white") {
+      } else if (parts.length === 2 && tokens.foundation.colors[parts[1]]?.DEFAULT) {
         family = parts[1];
-        const whiteHasDefault = tokens.foundation.colors["white"] && "DEFAULT" in tokens.foundation.colors["white"];
-        if (whiteHasDefault) {
-          shade = "DEFAULT";
-        }
+        shade = "DEFAULT";
       }
     }
     return { selectedFamily: family, selectedShade: shade };
@@ -52,22 +50,22 @@ export const TokenColorPicker = memo(function TokenColorPicker({ value, onChange
         ? "DEFAULT" 
         : availableShades[0];
     
-    onChange(`{color.${family}.${defaultShade}}`);
+    if (defaultShade) onChange(`{color.${family}.${defaultShade}}`);
   }, [tokens.foundation.colors, onChange]);
 
   const handleShadeChange = useCallback((shade: string) => {
-    onChange(`{color.${selectedFamily}.${shade}}`);
+    if (selectedFamily && shade) onChange(`{color.${selectedFamily}.${shade}}`);
   }, [selectedFamily, onChange]);
 
   return (
     <div className="flex gap-2 w-full">
       <Select value={selectedFamily} onValueChange={handleFamilyChange}>
-        <SelectTrigger className="w-[120px] h-8 text-xs bg-white">
+        <SelectTrigger aria-label={`${ariaLabel} family`} className="w-[120px] h-8 text-xs bg-background">
           <SelectValue placeholder="Color" />
         </SelectTrigger>
-        <SelectContent className="bg-white z-50">
+        <SelectContent className="bg-background z-50">
           {families.map((f) => (
-            <SelectItem key={f} value={f} className="text-xs bg-white">
+            <SelectItem key={f} value={f} className="text-xs bg-background">
               <div className="flex items-center gap-2">
                 <div
                     className="w-3 h-3 rounded-full border"
@@ -86,12 +84,12 @@ export const TokenColorPicker = memo(function TokenColorPicker({ value, onChange
         onValueChange={handleShadeChange} 
         disabled={!selectedFamily}
       >
-        <SelectTrigger className="flex-1 h-8 text-xs bg-white">
+        <SelectTrigger aria-label={`${ariaLabel} shade`} className="flex-1 h-8 text-xs bg-background">
           <SelectValue placeholder="Shade" />
         </SelectTrigger>
-        <SelectContent className="bg-white z-50">
+        <SelectContent className="bg-background z-50">
           {shades.map((s) => (
-            <SelectItem key={s} value={s} className="text-xs bg-white">
+            <SelectItem key={s} value={s} className="text-xs bg-background">
               <div className="flex items-center gap-2">
                  <div
                     className="w-3 h-3 rounded-sm border"

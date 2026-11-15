@@ -1,9 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface UiState {
-  activeMainTab: 'tokens' | 'components';
+  activeMainTab: 'tokens' | 'components' | 'templates' | 'palette';
   isPreviewOpen: boolean;
   isPreviewDark: boolean;
+  previewTemplate: 'landing' | 'dashboard' | 'pricing';
 
   // Editor State
   activeEditorTab: string; // 'settings' | 'foundation' | 'semantic'
@@ -17,6 +18,7 @@ const initialState: UiState = {
   activeMainTab: 'tokens',
   isPreviewOpen: false,
   isPreviewDark: false,
+  previewTemplate: 'landing',
   activeEditorTab: 'foundation',
   selectedEditorCategory: null,
   selectedComponentId: null,
@@ -26,7 +28,7 @@ export const uiSlice = createSlice({
   name: 'ui',
   initialState,
   reducers: {
-    setActiveMainTab: (state, action: PayloadAction<'tokens' | 'components'>) => {
+    setActiveMainTab: (state, action: PayloadAction<UiState['activeMainTab']>) => {
       state.activeMainTab = action.payload;
     },
     setPreviewOpen: (state, action: PayloadAction<boolean>) => {
@@ -37,6 +39,9 @@ export const uiSlice = createSlice({
     },
     setPreviewTheme: (state, action: PayloadAction<boolean>) => {
       state.isPreviewDark = action.payload;
+    },
+    setPreviewTemplate: (state, action: PayloadAction<UiState['previewTemplate']>) => {
+      state.previewTemplate = action.payload;
     },
     setActiveEditorTab: (state, action: PayloadAction<string>) => {
       state.activeEditorTab = action.payload;
@@ -58,6 +63,7 @@ export const {
   setPreviewOpen,
   togglePreviewTheme,
   setPreviewTheme,
+  setPreviewTemplate,
   setActiveEditorTab,
   setSelectedEditorCategory,
   setSelectedComponentId

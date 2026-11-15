@@ -28,6 +28,7 @@ export function ComponentList({ onSelect }: ComponentListProps) {
       <div className="relative">
         <Input
           placeholder="Search components..."
+          aria-label="Search components"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />

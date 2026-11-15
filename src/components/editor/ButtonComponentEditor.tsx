@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -19,17 +20,20 @@ interface TokenInputProps {
 }
 
 const TokenInput = ({ label, value, path, type = "text", onUpdate }: TokenInputProps) => {
+    const inputId = useId();
+    const fieldLabel = `Button ${path.join(" ")} (${label})`;
     // Check if alias
     const isAlias = value.startsWith("{");
     const isColor = (type === "color" || /^#[0-9A-Fa-f]{6}$/.test(value)) && !isAlias;
 
     return (
        <div className="space-y-1">
-           <Label className="text-xs">{label}</Label>
+           <Label htmlFor={inputId} className="text-xs">{label}</Label>
            <div className="flex gap-2">
                 {isColor && (
                    <Input
                        type="color"
+                       aria-label={`${fieldLabel} color picker`}
                        value={value}
                        onChange={(e) => onUpdate(path, e.target.value)}
                        className="w-8 h-8 p-0 border-0 rounded-md cursor-pointer shrink-0"
@@ -37,6 +41,8 @@ const TokenInput = ({ label, value, path, type = "text", onUpdate }: TokenInputP
                )}
                <Input
                    type="text"
+                   id={inputId}
+                   aria-label={fieldLabel}
                    value={value}
                    onChange={(e) => onUpdate(path, e.target.value)}
                    className="h-8 text-xs font-mono"

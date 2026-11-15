@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 
 type TabsContextValue = {
   value: string
+  id: string
   onValueChange: (value: string) => void
 }
 
@@ -13,46 +14,55 @@ const TabsContext = React.createContext<TabsContextValue | undefined>(undefined)
 const Tabs = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { value: string; onValueChange: (value: string) => void }
->(({ className, value, onValueChange, ...props }, ref) => (
-  <TabsContext.Provider value={{ value, onValueChange }}>
-    <div ref={ref} className={cn("", className)} {...props} />
-  </TabsContext.Provider>
-))
+>(({ className, value, onValueChange, ...props }, ref) => {
+  const id = React.useId()
+  return (
+    <TabsContext.Provider value={{ value, onValueChange, id }}>
+      <div ref={ref} className={className} {...props} />
+    </TabsContext.Provider>
+  )
+})
 Tabs.displayName = "Tabs"
 
-const TabsList = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground",
-      className
-    )}
-    {...props}
-  />
-))
+const TabsList = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} role="tablist" className={cn("inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground", className)} {...props} />
+  )
+)
 TabsList.displayName = "TabsList"
 
 const TabsTrigger = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & { value: string }
->(({ className, value, ...props }, ref) => {
+>(({ className, value, onClick, onKeyDown, ...props }, ref) => {
   const context = React.useContext(TabsContext)
   if (!context) throw new Error("TabsTrigger must be used within Tabs")
-
   const isActive = context.value === value
 
   return (
     <button
       ref={ref}
-      className={cn(
-        "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-        isActive && "bg-background text-foreground shadow",
-        className
-      )}
-      onClick={() => context.onValueChange(value)}
+      type="button"
+      role="tab"
+      id={`${context.id}-tab-${value}`}
+      aria-controls={`${context.id}-panel-${value}`}
+      aria-selected={isActive}
+      tabIndex={isActive ? 0 : -1}
+      className={cn("inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50", isActive && "bg-background text-foreground shadow", className)}
+      onClick={event => {
+        onClick?.(event)
+        if (!event.defaultPrevented) context.onValueChange(value)
+      }}
+      onKeyDown={event => {
+        onKeyDown?.(event)
+        if (event.defaultPrevented || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return
+        const tabs = Array.from(event.currentTarget.closest('[role="tablist"]')?.querySelectorAll<HTMLButtonElement>('[role="tab"]:not(:disabled)') ?? [])
+        const index = tabs.indexOf(event.currentTarget)
+        const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length
+        event.preventDefault()
+        tabs[next]?.focus()
+        tabs[next]?.click()
+      }}
       {...props}
     />
   )
@@ -63,20 +73,11 @@ const TabsContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { value: string }
 >(({ className, value, ...props }, ref) => {
-   const context = React.useContext(TabsContext)
-   if (!context) throw new Error("TabsContent must be used within Tabs")
-
-   if (context.value !== value) return null
-
+  const context = React.useContext(TabsContext)
+  if (!context) throw new Error("TabsContent must be used within Tabs")
+  if (context.value !== value) return null
   return (
-    <div
-      ref={ref}
-      className={cn(
-        "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-        className
-      )}
-      {...props}
-    />
+    <div ref={ref} role="tabpanel" id={`${context.id}-panel-${value}`} aria-labelledby={`${context.id}-tab-${value}`} tabIndex={0} className={cn("mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", className)} {...props} />
   )
 })
 TabsContent.displayName = "TabsContent"
