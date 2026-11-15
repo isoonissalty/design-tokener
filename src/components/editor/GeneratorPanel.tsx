@@ -5,7 +5,7 @@ import { Check, WandSparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { applyGeneration } from "@/store/features/themeSlice";
-import { setGeneratorCategory } from "@/store/features/uiSlice";
+import { revealGeneratedTokens, setActiveMainTab, setGeneratorCategory } from "@/store/features/uiSlice";
 import { contrastRatio, readableForeground } from "@/lib/palette-generator";
 import type { GenerationCategory, GenerationResult } from "@/types/generation";
 import { GenerationDetails, generatedValue } from "./GenerationDetails";
@@ -123,10 +123,18 @@ export function GeneratorPanel() {
         </>}
       </div>
       <div className="border-t pt-3 shrink-0 space-y-2">
-        <Button className="w-full" disabled={!result || applied} onClick={() => result && dispatch(applyGeneration(result))}>
+        <Button className="w-full" disabled={!result || applied} onClick={() => {
+          if (!result) return;
+          dispatch(applyGeneration(result));
+          dispatch(revealGeneratedTokens(result));
+        }}>
           {applied ? <Check className="h-4 w-4" /> : <WandSparkles className="h-4 w-4" />}{applied ? `${category === "colors" ? "Palette" : categories.find((item) => item.id === category)?.label} applied` : `Apply ${label}`}
         </Button>
         <p className="text-center text-[11px] leading-relaxed text-muted-foreground" role="status">{applied ? "Applied to your foundation. Use Undo to restore." : category === "colors" ? result?.parameters.makePrimary === "false" ? "Adds named foundation palettes. Each apply can be undone." : "Adds primary + secondary palettes and connects them to your preview." : "Updates matching foundation tokens. Each apply can be undone."}</p>
+        {applied && result && <div className="flex flex-wrap justify-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => { dispatch(revealGeneratedTokens(result)); dispatch(setActiveMainTab("tokens")); }}>Edit applied tokens</Button>
+          <Button variant="outline" size="sm" onClick={() => { dispatch(revealGeneratedTokens(result)); dispatch(setActiveMainTab("templates")); }}>Save as template</Button>
+        </div>}
       </div>
     </div>
   );

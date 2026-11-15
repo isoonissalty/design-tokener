@@ -15,9 +15,9 @@ Open http://localhost:3000. The editor and preview resize side by side on deskto
 
 ## Create and refine a theme
 
-- **Templates:** apply one of eight complete starting themes. Each includes both color modes, typography, spacing, and button styles.
-- **Generate:** build color palettes, spacing, corner radius, and content sizing. Color generation supports OKLCH, HSL, or encoded sRGB, with independent primary and secondary colors, named palettes, and optional harmony relationships.
-- **Tokens:** edit individual foundation and semantic values. Generated palettes appear under Foundation → Colors.
+- **Templates:** see the current theme, save it under a name, or apply one of eight complete starting themes. Your templates persist in this browser and include every token, both color modes, typography, spacing, and button styles. Editing or applying another theme keeps saved templates intact.
+- **Generate:** build color palettes, spacing, corner radius, and content sizing. Color generation supports OKLCH, HSL, or encoded sRGB, with independent primary and secondary colors, named palettes, and optional harmony relationships. Generator drafts stay in place when switching tabs.
+- **Tokens:** edit individual foundation and semantic values. After applying generated values, use **Edit applied tokens** to open the matching Foundation category. Generated color palettes appear expanded at the top of Colors. Use **Save as template** to name and save the full applied theme and its generation recipes in Templates.
 - **Components:** customize button colors, interaction states, radius, and padding. Other listed components inherit the global tokens.
 - **Preview:** select a layout, toggle light/dark mode, or open the full screen preview. Dashboard and pricing controls can be tried interactively.
 
