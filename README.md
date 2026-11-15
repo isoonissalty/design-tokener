@@ -2,16 +2,32 @@
 
 Build a Tailwind theme from editable foundation, semantic, and component tokens. Preview the result in light and dark mode across seven interactive example layouts.
 
+Generate palettes and dimension scales, save reusable themes in your browser, and export CSS, Tailwind configuration, JSON, or a DESIGN.md design contract.
+
+[Contributing](CONTRIBUTING.md) · [MIT License](LICENSE) · [Report an issue](https://github.com/isoonissalty/design-tokener/issues)
+
 ## Run locally
 
-Requires Node.js 22.15+ (Node.js 24 recommended).
+Requires Git, npm, and Node.js 22.15+ (Node.js 24 recommended). The test loaders use Node's `registerHooks` API, so older Node.js releases cannot run the full test suite.
 
 ```bash
+git clone https://github.com/isoonissalty/design-tokener.git
+cd design-tokener
 npm ci
 npm run dev
 ```
 
-Open http://localhost:3000. The editor and preview resize side by side on desktop and stack vertically on smaller screens.
+Open [http://localhost:3000](http://localhost:3000). The editor and preview resize side by side on desktop and stack vertically on smaller screens. No API keys, database, or environment variables are required for local development. Next.js fetches Geist fonts from Google during development and production builds, so allow network access for those requests.
+
+## Token model
+
+| Layer | Purpose | Examples |
+| --- | --- | --- |
+| Foundation | Base values used throughout a theme. | Color palettes, font families, spacing, sizing, radii, and border widths. |
+| Semantic | Values assigned to a visual role, including light and dark colors. | Canvas backgrounds, primary text, intent colors, typography, shadows, and motion. |
+| Component | Values for individual component styles. | Button backgrounds, interaction states, text, radius, and padding. |
+
+Tokens can refer to other tokens with aliases such as `{color.blue.600}` or `{space.4}`. Edit the foundation value to update the tokens that reference it.
 
 ## Create and refine a theme
 
@@ -24,7 +40,7 @@ Open http://localhost:3000. The editor and preview resize side by side on deskto
 
 Try form validation and preferences in Settings, inspect control and status styles in the gallery, filter products and adjust cart quantities in Storefront, or explore typography and code in the article. Sample interactions stay in the preview and reset when switching layouts or opening full screen; they do not change your theme or submit data.
 
-Template, palette, import, reset, and saved-theme restoration are undoable. Undo/redo retains up to 100 changes. Ctrl/⌘ Z and Ctrl/⌘ Shift Z work outside text inputs. Save and restore use this browser's local storage; use JSON export to keep a portable copy.
+Template, palette, import, reset, and saved-theme restoration are undoable. Undo/redo retains up to 100 changes. Ctrl/⌘ Z and Ctrl/⌘ Shift Z work outside text inputs. Use the header's **Save** and **Restore** controls to keep or reload a snapshot in this browser's local storage. Named templates are stored separately. Export JSON for a portable backup; clearing browser storage removes local saves and templates.
 
 ## Generated values and references
 
@@ -56,19 +72,31 @@ CSS imports update supported matching variables and retain the other tokens. JSO
 
 Font selections travel with saved themes, templates, JSON, and CSS imports. CSS exports include the Google Fonts import and apply the body font; Tailwind v3 exports also map `font-en` and `font-th`. DESIGN.md includes the loading URL and language guidance. Keep English first, Thai second, and generic fallback last in the mixed-language stack. Imported custom font names need their own font files or loading setup.
 
-## Verification
+## Development
 
-```bash
-npm test
-npm run typecheck
-npm run lint
-npm run build
-```
+Built with Next.js App Router, React, TypeScript, Redux Toolkit, Tailwind CSS v3, and Radix UI primitives. The editor exports themes for both Tailwind CSS v3 and v4.
 
-The Node test suite covers token reference generation, color preservation, palette/contrast behavior, immutable templates, import/export (including DESIGN.md structure and alias resolution), and undo/redo history. Production startup uses `npm start`. The build fetches Geist fonts through Next.js.
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the development server. |
+| `npm test` | Run the Node.js test suites against the TypeScript source. |
+| `npm run typecheck` | Check TypeScript without emitting files. |
+| `npm run lint` | Run ESLint. |
+| `npm run build` | Create a production build. |
+| `npm start` | Serve the production build after running `npm run build`. |
+
+The Node test suite covers token reference generation, color preservation, palette/contrast behavior, immutable templates, import/export (including DESIGN.md structure and alias resolution), and undo/redo history. See [CONTRIBUTING.md](CONTRIBUTING.md) for the project structure, development workflow, and pull request checks.
 
 ## Dependency security
 
 Run `npm ci` to install the audited lockfile and `npm audit --include=dev --audit-level=low` to check both runtime and development dependencies at every severity.
 
 The scoped `@typescript-eslint/typescript-estree` override keeps its `minimatch` dependency on a patched 11.x release for [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249). Remove the override when the upstream parser uses a patched version in its own dependency range.
+
+## Contributing
+
+Bug reports, documentation improvements, and code contributions are welcome. Read the [contributing guide](CONTRIBUTING.md) for setup instructions, coding conventions, and how to submit a pull request.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
