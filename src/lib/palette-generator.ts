@@ -1,4 +1,9 @@
 import type { GeneratedToken, GenerationResult } from "@/types/generation";
+import type { DesignTokenSystem } from "@/types/token-system";
+
+export const PALETTE_SHADES = ["50", "100", "200", "300", "400", "500", "600", "700", "800", "900", "950"] as const;
+export type PaletteShade = typeof PALETTE_SHADES[number];
+export type GeneratedPalette = Record<PaletteShade, string>;
 
 export type PaletteMethod = "oklch" | "hsl" | "rgb";
 export type SecondaryRelationship = "custom" | "complementary" | "analogous" | "triadic";
@@ -207,7 +212,18 @@ function makeRamp(seed: string, family: string, method: PaletteMethod): Generate
   });
 }
 
-export function generatePalette({ primary, secondary, method, relationship = "custom" }: PaletteOptions): GenerationResult {
+/** The seed-only overload keeps existing theme templates and palette callers compatible. */
+export function generatePalette(seed: string): GeneratedPalette;
+export function generatePalette(options: PaletteOptions): GenerationResult;
+export function generatePalette(input: string | PaletteOptions): GeneratedPalette | GenerationResult {
+  if (typeof input === "string") {
+    const seed = normalizeHex(input);
+    const generated = generatePalette({ primary: seed, secondary: seed, method: "oklch" });
+    return Object.fromEntries(generated.tokens
+      .filter((token) => token.key.startsWith("primary."))
+      .map((token) => [token.key.slice("primary.".length), token.value])) as GeneratedPalette;
+  }
+  const { primary, secondary, method, relationship = "custom" } = input;
   if (!Object.prototype.hasOwnProperty.call(METHOD_NAMES, method)) throw new Error("Choose a supported color method.");
   const normalizedPrimary = normalizeHex(primary);
   const normalizedSecondary = relationship === "custom"
@@ -261,4 +277,67 @@ export function contrastRatio(first: string, second: string): number {
 /** Whichever opaque foreground offers the greater WCAG contrast. */
 export function readableForeground(background: string): "#000000" | "#ffffff" {
   return contrastRatio(background, "#000000") >= contrastRatio(background, "#ffffff") ? "#000000" : "#ffffff";
+}
+
+
+/** Nullable normalization retained for saved-theme validation and the original palette UI. */
+export function normalizeHexColor(value: string): string | null {
+  return isValidHex(value) ? normalizeHex(value) : null;
+}
+
+export function isValidPaletteName(name: string): boolean {
+  return /^[a-z][a-z0-9-]{0,39}$/.test(name) && !["constructor", "prototype", "__proto__"].includes(name);
+}
+
+function accessibleShade(palette: GeneratedPalette, target: PaletteShade, foreground: string): PaletteShade {
+  return [...PALETTE_SHADES]
+    .sort((a, b) => Math.abs(Number(a) - Number(target)) - Math.abs(Number(b) - Number(target)))
+    .find((shade) => contrastRatio(palette[shade], foreground) >= 4.5) ?? target;
+}
+
+/** Preserve existing custom shades and make the whole application one undoable update. */
+export function applyGeneratedPalette(
+  tokens: DesignTokenSystem,
+  name: string,
+  palette: GeneratedPalette,
+  makePrimary = true,
+): DesignTokenSystem {
+  if (!isValidPaletteName(name)) throw new Error("Use a palette name starting with a letter, followed by lowercase letters, numbers, or hyphens (up to 40 characters).");
+  for (const shade of PALETTE_SHADES) {
+    if (!normalizeHexColor(palette[shade])) throw new Error(`Shade ${shade} must be a valid hex color.`);
+  }
+  const next = structuredClone(tokens);
+  next.foundation.colors[name] = { ...next.foundation.colors[name], ...palette };
+  if (makePrimary) {
+    const ref = (shade: PaletteShade) => `{color.${name}.${shade}}`;
+    const light = accessibleShade(palette, "600", "#ffffff");
+    const dark = accessibleShade(palette, "400", "#000000");
+    next.semantic.colors.intent.primary = { light: ref(light), dark: ref(dark) };
+    // A previously generated theme can map its global foreground through onPrimary.
+    next.semantic.colors.intent.onPrimary = { light: "#ffffff", dark: "#000000" };
+    next.semantic.colors.border.focus = { light: ref(light), dark: ref(dark) };
+    next.components.button.bg.default = { light: "{color.intent.primary.light}", dark: "{color.intent.primary.dark}" };
+    next.components.button.bg.hover = {
+      light: ref(accessibleShade(palette, "700", "#ffffff")),
+      dark: ref(accessibleShade(palette, "300", "#000000")),
+    };
+    next.components.button.bg.active = {
+      light: ref(accessibleShade(palette, "800", "#ffffff")),
+      dark: ref(accessibleShade(palette, "500", "#000000")),
+    };
+    next.components.button.text.default = { light: "#ffffff", dark: "#000000" };
+  }
+  return next;
+}
+
+export function randomPaletteSeed(): string {
+  // A moderate saturation and lightness keep the seed useful as a starting point.
+  const hue = Math.random() * 360;
+  const saturation = 0.55 + Math.random() * 0.3;
+  const lightness = 0.42 + Math.random() * 0.18;
+  const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+  const x = chroma * (1 - Math.abs((hue / 60) % 2 - 1));
+  const m = lightness - chroma / 2;
+  const rgb: RGB = hue < 60 ? [chroma, x, 0] : hue < 120 ? [x, chroma, 0] : hue < 180 ? [0, chroma, x] : hue < 240 ? [0, x, chroma] : hue < 300 ? [x, 0, chroma] : [chroma, 0, x];
+  return rgbToHex(rgb.map((channel) => channel + m) as RGB);
 }

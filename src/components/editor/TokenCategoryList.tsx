@@ -28,6 +28,7 @@ export function TokenCategoryList({ categories, onSelect }: TokenCategoryListPro
       <div className="relative">
         <Input
           placeholder="Search categories..."
+          aria-label="Search token categories"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />

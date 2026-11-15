@@ -1,96 +1,94 @@
-import type { ComponentTokens, DesignTokenSystem, FoundationTokens, SemanticTokens } from "@/types/token-system";
-import { hexToHsl } from "@/lib/colors";
+import type { DesignTokenSystem } from "@/types/token-system";
 
-// Helper to convert a dot-notation path or array path to kebab-case CSS variable
-export const toCssVar = (path: string[]) => {
-  return "--" + path.map(p =>
-    p.replace(/[A-Z]/g, m => "-" + m.toLowerCase()) // camelToKebab
-     .replace(/\./g, "-") // dotToKebab just in case
-  ).join("-");
-};
+/** Use exactly the same spelling for declarations and token references. */
+export const toCssVar = (path: string[]): string => "--" + path.map(part =>
+  part === "DEFAULT" ? "default" : part.replace(/([a-z0-9])([A-Z])/g, "$1-$2").replace(/\./g, "-").toLowerCase()
+).join("-");
 
-const processValue = (value: string) => {
-  // If it's a hex color, convert to HSL
-  if (/^#[0-9A-Fa-f]{3,8}$/.test(value)) {
-    return hexToHsl(value);
-  }
+/** Values remain complete CSS colors, preserving alpha and modern color spaces. */
+export function processTokenValue(value: string): string {
+  const resolved = value.replace(/\{([^}]+)\}/g, (_, path: string) => `var(${toCssVar(path.split("."))})`);
+  // Editor values must never be able to escape a declaration or a style element.
+  return /[;{}<>]/.test(resolved) ? "initial" : resolved;
+}
 
-  // If it's an alias, convert to var reference
-  return value.replace(/\{([^}]+)\}/g, (_, path: string) => {
-    // Semantic pairs become one CSS variable with a dark override. References
-    // carrying a legacy mode suffix must point to that same variable.
-    const normalized = /^(?:color\.(?:text|bg|border|intent)\.|button\.)/.test(path)
-      ? path.replace(/\.(?:light|dark)$/, "")
-      : path;
-    return `var(${toCssVar(normalized.split("."))})`;
-  });
-};
+export const themeColorMappings = `
+  --background: var(--color-bg-canvas);
+  --foreground: var(--color-text-primary);
+  --card: var(--color-bg-surface);
+  --card-foreground: var(--color-text-primary);
+  --popover: var(--color-bg-surface);
+  --popover-foreground: var(--color-text-primary);
+  --primary: var(--color-intent-primary);
+  --primary-foreground: var(--button-text-default);
+  --secondary: var(--color-intent-secondary, var(--color-bg-subtle));
+  --secondary-foreground: var(--color-intent-on-secondary, var(--color-text-primary));
+  --muted: var(--color-bg-subtle);
+  --muted-foreground: var(--color-text-secondary);
+  --accent: var(--color-bg-subtle);
+  --accent-foreground: var(--color-text-primary);
+  --destructive: var(--color-intent-error);
+  --destructive-foreground: var(--button-text-default);
+  --border: var(--color-border-default);
+  --input: var(--color-border-default);
+  --ring: var(--color-border-focus);
+  --radius: var(--radius-md);
+`;
 
-export function generateTokenCss(tokens: DesignTokenSystem) {
-  const cssVarsRoot: string[] = [];
-  const cssVarsDark: string[] = [];
+interface GeneratorOptions {
+  /** CSS rem is rooted at html, so previews resolve token rem values locally. */
+  preview?: boolean;
+}
+
+export function generateTokenCss(tokens: DesignTokenSystem, options: GeneratorOptions = {}) {
+  const root: string[] = [];
+  const dark: string[] = [];
+  const baseFontSize = tokens.settings?.baseFontSize || "16px";
+  const scaleRem = options.preview && /^\d+(?:\.\d+)?px$/.test(baseFontSize)
+    ? (value: string) => value.replace(/(-?(?:\d+\.?\d*|\.\d+))rem\b/g, (_, amount: string) => `${Number(amount) * parseFloat(baseFontSize)}px`)
+    : (value: string) => value;
+  const value = (input: string) => scaleRem(processTokenValue(input));
 
   const traverse = (node: unknown, path: string[]) => {
     if (typeof node === "string") {
-      const varName = toCssVar(path);
-      cssVarsRoot.push(`${varName}: ${processValue(node)};`);
+      root.push(`${toCssVar(path)}: ${value(node)};`);
       return;
     }
-
-    if (typeof node === "object" && node !== null) {
-      const record = node as Record<string, unknown>;
-      if (typeof record.light === "string" && typeof record.dark === "string" && Object.keys(record).length === 2) {
-        const varName = toCssVar(path);
-        cssVarsRoot.push(`${varName}: ${processValue(record.light)};`);
-        cssVarsDark.push(`${varName}: ${processValue(record.dark)};`);
-        return;
-      }
-
-      for (const key of Object.keys(record)) {
-         traverse(record[key], [...path, key]);
-      }
+    if (!node || typeof node !== "object") return;
+    const entries = node as Record<string, unknown>;
+    if (typeof entries.light === "string" && typeof entries.dark === "string") {
+      const name = toCssVar(path);
+      root.push(`${name}: ${value(entries.light)};`);
+      // Keep explicit mode references valid for older saved token systems.
+      root.push(`${name}-light: ${value(entries.light)};`, `${name}-dark: ${value(entries.dark)};`);
+      dark.push(`${name}: ${value(entries.dark)};`);
+      return;
     }
+    for (const [key, item] of Object.entries(entries)) traverse(item, [...path, key]);
   };
 
-  const traverseFoundation = (foundation: FoundationTokens) => {
-      if (!foundation) return;
-      traverse(foundation.colors, ["color"]);
-      if (foundation.typography) {
-          traverse(foundation.typography.family, ["font", "family"]);
-          traverse(foundation.typography.size, ["font", "size"]);
-          traverse(foundation.typography.weight, ["font", "weight"]);
-          traverse(foundation.typography.lineHeight, ["line", "height"]);
-          traverse(foundation.typography.letterSpacing, ["letter", "spacing"]);
-      }
-      traverse(foundation.spacing, ["space"]);
-      traverse(foundation.sizing, ["size"]);
-      traverse(foundation.radius, ["radius"]);
-      traverse(foundation.borderWidth, ["border", "width"]);
-  };
+  const { foundation, semantic, components } = tokens;
+  traverse(foundation.colors, ["color"]);
+  traverse(foundation.typography.family, ["font", "family"]);
+  traverse(foundation.typography.size, ["font", "size"]);
+  traverse(foundation.typography.weight, ["font", "weight"]);
+  traverse(foundation.typography.lineHeight, ["line", "height"]);
+  traverse(foundation.typography.letterSpacing, ["letter", "spacing"]);
+  traverse(foundation.spacing, ["space"]);
+  traverse(foundation.sizing, ["size"]);
+  traverse(foundation.radius, ["radius"]);
+  traverse(foundation.borderWidth, ["border", "width"]);
+  traverse(semantic.colors, ["color"]);
+  traverse(semantic.typography, ["text"]);
+  traverse(semantic.shadow, ["shadow"]);
+  traverse(semantic.motion, ["motion"]);
+  traverse(semantic.opacity, ["opacity"]);
+  traverse(semantic.zIndex, ["z"]);
+  traverse(components.button, ["button"]);
 
-  const traverseSemantic = (semantic: SemanticTokens) => {
-      if (!semantic) return;
-      traverse(semantic.colors, ["color"]);
-      traverse(semantic.typography, ["text"]);
-      traverse(semantic.shadow, ["shadow"]);
-      traverse(semantic.motion, ["motion"]);
-      traverse(semantic.opacity, ["opacity"]);
-      traverse(semantic.zIndex, ["z"]);
-  };
-
-  const traverseComponents = (components: ComponentTokens) => {
-      if (!components) return;
-      traverse(components.button, ["button"]);
-  };
-
-  if (tokens) {
-      traverseFoundation(tokens.foundation);
-      traverseSemantic(tokens.semantic);
-      traverseComponents(tokens.components);
+  // A composite shadow is consumable by Tailwind utilities and export clients.
+  for (const name of Object.keys(semantic.shadow)) {
+    root.push(`--shadow-${name}: var(--shadow-${name}-x) var(--shadow-${name}-y) var(--shadow-${name}-blur) var(--shadow-${name}-spread) var(--shadow-${name}-color);`);
   }
-
-  return {
-    root: cssVarsRoot,
-    dark: cssVarsDark
-  };
+  return { root, dark };
 }

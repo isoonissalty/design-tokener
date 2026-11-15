@@ -1,51 +1,66 @@
 # Design Token Builder
 
-A token editor with light/dark previews and CSS/Tailwind export.
+Build a Tailwind theme from editable foundation, semantic, and component tokens. Preview the result in light and dark mode across landing page, dashboard, and pricing layouts.
 
-## Generators
+## Run locally
 
-Open **Generate** in the sidebar, or open a foundation category and select **Generate**. Preview the result, inspect **Why these values?**, then apply it. Each application is one Undo/Redo step and preserves other foundation tokens.
-
-- **Palette:** OKLCH, HSL, or encoded sRGB tint/shade ramps. Pick primary and secondary colors independently, or derive a secondary with a complementary, analogous, or triadic relationship. Both seeds remain exact at shade 500. The ramp weights and hue rotations are application recipes based on [W3C color models](https://www.w3.org/TR/css-color-4/) and [color harmony concepts](https://color.adobe.com/create/color-wheel).
-- **Spacing:** adjustable 4px or 8px grids, or the published [Carbon spacing scale](https://www.carbondesignsystem.com/building-blocks/foundations/spacing/overview).
-- **Radius:** adjustable [Tailwind v3](https://v3.tailwindcss.com/docs/border-radius) or [Material Web v0_192](https://github.com/material-components/material-web/blob/main/tokens/versions/v0_192/_md-sys-shape.scss) presets; zero and full rounding stay fixed.
-- **Sizing:** adjustable content widths based on [Tailwind v3 max-widths](https://v3.tailwindcss.com/docs/max-width), with an independent container width.
-
-Each token includes its calculation and linked sources. Dimension generators support px/rem output using the pixel root size in **Tokens → Settings**. Saved configurations preserve generation references; exported CSS includes them as comments. Manually edited values are identified separately from their original generated rationale.
-
-Run `npm test`, `npm run lint`, and `npx tsc --noEmit` for validation, and `npm run build` for the production build.
-
-## Getting Started
-
-First, run the development server:
+Requires Node.js 22.15+ (Node.js 24 recommended).
 
 ```bash
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. The editor and preview resize side by side on desktop and stack vertically on smaller screens.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Create and refine a theme
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Templates:** apply one of eight complete starting themes. Each includes both color modes, typography, spacing, and button styles.
+- **Generate:** build color palettes, spacing, corner radius, and content sizing. Color generation supports OKLCH, HSL, or encoded sRGB, with independent primary and secondary colors, named palettes, and optional harmony relationships.
+- **Tokens:** edit individual foundation and semantic values. Generated palettes appear under Foundation → Colors.
+- **Components:** customize button colors, interaction states, radius, and padding. Other listed components inherit the global tokens.
+- **Preview:** select a layout, toggle light/dark mode, or open the full screen preview. Dashboard and pricing controls can be tried interactively.
 
-## Learn More
+Template, palette, import, reset, and saved-theme restoration are undoable. Undo/redo retains up to 100 changes. Ctrl/⌘ Z and Ctrl/⌘ Shift Z work outside text inputs. Save and restore use this browser's local storage; use JSON export to keep a portable copy.
 
-To learn more about Next.js, take a look at the following resources:
+## Generated values and references
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Open **Generate**, choose a method, inspect the preview and **Why these values?**, then apply. Every generated token includes its formula and linked sources. Each application is one undoable change and preserves other foundation tokens.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Palette:** both chosen colors stay exact at shade 500. Ramp weights and hue rotations are application recipes informed by [W3C color models](https://www.w3.org/TR/css-color-4/) and [color harmony concepts](https://color.adobe.com/create/color-wheel).
+- **Spacing:** adjustable 4px or 8px grids, or the published [Carbon spacing scale](https://www.carbondesignsystem.com/building-blocks/foundations/spacing/overview).
+- **Radius:** adjustable [Tailwind v3](https://v3.tailwindcss.com/docs/border-radius) or [Material Web v0_192](https://github.com/material-components/material-web/blob/main/tokens/versions/v0_192/_md-sys-shape.scss) presets. Zero and full rounding stay fixed.
+- **Sizing:** adjustable content widths based on [Tailwind v3 max-widths](https://v3.tailwindcss.com/docs/max-width), with an independent container width.
 
-## Deploy on Vercel
+Dimension generators support px/rem output using the root size in **Tokens → Settings**. Saved configurations and JSON exports preserve generation references; exported CSS includes them as comments. Manually edited values and subsequent root-size changes are distinguished from the original recipe.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Import and export
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Import Theme** accepts a `.json`/`.css` file or pasted text. JSON restores the full token system. CSS merges recognized `:root`, `.dark`, and Tailwind `@theme` declarations into the current theme. Hex, HSL, RGB, and modern CSS color values remain editable. JavaScript configuration imports are not executed; use CSS or JSON instead.
+
+**Export Theme** offers a code preview, copy, and download:
+
+| Format | Usage |
+| --- | --- |
+| Tailwind CSS v4 | Use `theme.css` as your Tailwind stylesheet. It includes the Tailwind import, utility mappings, and dark variant. |
+| Tailwind CSS v3 | Download both `theme.css` and `tailwind.config.cjs`. Import the CSS alongside your Tailwind directives and use the config's theme mappings. |
+| JSON | Includes every token and both modes for exact restoration and further editing. |
+
+CSS imports update supported matching variables and retain the other tokens. JSON is the format for lossless backups. Review import errors in the dialog; an invalid import leaves the current theme intact.
+
+## Verification
+
+```bash
+npm test
+npm run typecheck
+npm run lint
+npm run build
+```
+
+The Node test suite covers token reference generation, color preservation, palette/contrast behavior, immutable templates, import/export, and undo/redo history. Production startup uses `npm start`. The build fetches Geist fonts through Next.js.
+
+## Dependency security
+
+Run `npm ci` to install the audited lockfile and `npm audit --include=dev --audit-level=low` to check both runtime and development dependencies at every severity.
+
+The scoped `@typescript-eslint/typescript-estree` override keeps its `minimatch` dependency on a patched 11.x release for [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249). Remove the override when the upstream parser uses a patched version in its own dependency range.

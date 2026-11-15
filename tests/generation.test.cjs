@@ -4,9 +4,10 @@ const assert = require("node:assert/strict");
 const vm = require("node:vm");
 const { generatePalette, deriveSecondaryColor, normalizeHex, isValidHex, contrastRatio, readableForeground } = require("../src/lib/palette-generator.ts");
 const { generateSpacing, generateRadius, generateSizing } = require("../src/lib/scale-generators.ts");
-const { default: reducer, applyGeneration, undo, redo, load, updateToken, updateSettings } = require("../src/store/features/themeSlice.ts");
+const { default: reducer, applyGeneration, undo, redo, load, setTokens, updateToken, updateSettings, HISTORY_LIMIT } = require("../src/store/features/themeSlice.ts");
 const { generateTokenCss } = require("../src/lib/css-generator.ts");
-const { generateThemeExport, generationComments } = require("../src/lib/generation-export.ts");
+const { generationComments } = require("../src/lib/generation-export.ts");
+const { validateTheme, importTheme, exportThemeJson, exportThemeCss, exportTailwindConfig } = require("../src/lib/theme-io.ts");
 
 const palette = (options = {}) => generatePalette({ primary: "#2468ac", secondary: "#d46a39", method: "oklch", ...options });
 const values = (result) => Object.fromEntries(result.tokens.map(({ key, value }) => [key, value]));
@@ -143,7 +144,9 @@ test("applying a palette preserves unrelated tokens and saves all provenance in 
 
 test("applying scales preserves custom keys and each other category", () => {
   let state = reducer(undefined, { type: "init" });
-  state = reducer(state, updateToken({ path: ["foundation", "spacing", "custom"], value: "37px" }));
+  const customized = structuredClone(state.present);
+  customized.foundation.spacing.custom = "37px";
+  state = reducer(state, setTokens(customized));
   state = reducer(state, applyGeneration(generateSpacing()));
   const spacing = state.present.foundation.spacing;
   state = reducer(state, applyGeneration(generateRadius()));
@@ -153,35 +156,129 @@ test("applying scales preserves custom keys and each other category", () => {
   assert.deepEqual(Object.keys(state.present.generation).sort(), ["radius", "sizing", "spacing"]);
 });
 
-test("generated CSS resolves semantic pair suffixes and camel-case aliases to declared variables", () => {
+test("named foundation-only palettes preserve theme mappings and repeated applications are a no-op", () => {
+  const initial = reducer(undefined, { type: "init" });
+  const result = palette();
+  result.parameters = { ...result.parameters, primaryName: "brand", secondaryName: "accent", makePrimary: "false" };
+  result.tokens = result.tokens.map((token) => ({ ...token, key: token.key.replace(/^primary\./, "brand.").replace(/^secondary\./, "accent.") }));
+  const applied = reducer(initial, applyGeneration(result));
+  assert.equal(applied.present.foundation.colors.brand[500], "#2468ac");
+  assert.equal(applied.present.foundation.colors.accent[500], "#d46a39");
+  assert.deepEqual(applied.present.semantic, initial.present.semantic);
+  assert.deepEqual(applied.present.components, initial.present.components);
+  assert.equal(reducer(applied, applyGeneration(result)), applied);
+
+  let fullHistory = initial;
+  for (let index = 0; index < HISTORY_LIMIT + 5; index++) {
+    fullHistory = reducer(fullHistory, updateToken({ path: ["foundation", "colors", "blue", "500"], value: `#${index.toString(16).padStart(6, "0")}` }));
+  }
+  assert.equal(reducer(fullHistory, applyGeneration(result)).past.length, HISTORY_LIMIT);
+});
+
+test("applied button defaults, hover and active states meet AA contrast across methods and extreme seeds", () => {
+  for (const method of ["oklch", "hsl", "rgb"]) {
+    for (const seed of ["#000000", "#ffffff", "#ffff00", "#00ff00", "#0000ff", "#888888", "#2468ac"]) {
+      const { present } = reducer(undefined, applyGeneration(palette({ primary: seed, method })));
+      for (const mode of ["light", "dark"]) {
+        const foreground = present.semantic.colors.intent.onPrimary[mode];
+        const backgrounds = [present.semantic.colors.intent.primary[mode], present.components.button.bg.hover[mode], present.components.button.bg.active[mode]];
+        for (const alias of backgrounds) {
+          const match = /^\{color\.primary\.(\d+)\}$/.exec(alias);
+          assert.ok(match, `Expected generated primary shade: ${alias}`);
+          const background = present.foundation.colors.primary[match[1]];
+          assert.ok(contrastRatio(background, foreground) >= 4.5, `${method} ${seed} ${mode} ${alias}`);
+        }
+      }
+    }
+  }
+});
+
+test("generated CSS resolves camel-case and explicit light/dark aliases to declared variables", () => {
   const state = reducer(undefined, applyGeneration(palette()));
-  const { root, dark } = generateTokenCss(state.present);
+  const legacyTheme = structuredClone(state.present);
+  legacyTheme.components.button.bg.hover = { light: "{color.intent.primary.light}", dark: "{color.intent.primary.dark}" };
+  const { root, dark } = generateTokenCss(legacyTheme);
   const declarations = new Set([...root, ...dark].map((line) => line.split(":")[0]));
   for (const line of [...root, ...dark]) {
     for (const match of line.matchAll(/var\((--[^),]+)/g)) assert.ok(declarations.has(match[1]), `Unresolved alias ${match[1]} in ${line}`);
   }
   assert.ok(root.includes("--button-bg-default: var(--color-intent-primary);"));
   assert.ok(dark.includes("--button-bg-default: var(--color-intent-primary);"));
+  assert.ok(root.includes("--button-bg-hover: var(--color-intent-primary-light);"));
+  assert.ok(dark.includes("--button-bg-hover: var(--color-intent-primary-dark);"));
+  assert.ok(root.includes("--color-primary-500: #2468ac;"));
 });
 
-test("export retains sources, generated utilities, mode mappings and valid JavaScript", () => {
+test("both CSS export versions retain references, full colors, and generated values", () => {
   let state = reducer(undefined, applyGeneration(palette()));
   for (const result of [generateSpacing(), generateRadius(), generateSizing()]) state = reducer(state, applyGeneration(result));
-  const { cssContent, configContent } = generateThemeExport(state.present);
-  assert.match(cssContent, /Generated token references/);
-  assert.match(cssContent, /https:\/\/www.w3.org\/TR\/css-color-4/);
-  assert.match(cssContent, /--secondary: var\(--color-intent-secondary/);
-  assert.match(cssContent, /--primary-foreground: var\(--color-intent-on-primary/);
+  for (const version of [3, 4]) {
+    const cssContent = exportThemeCss(state.present, version);
+    assert.match(cssContent, /Generated token references/);
+    assert.match(cssContent, /https:\/\/www.w3.org\/TR\/css-color-4/);
+    assert.match(cssContent, /--dt-color-primary-500: #2468ac;/);
+    assert.match(cssContent, /--dt-color-secondary-500: #d46a39;/);
+    assert.match(cssContent, /--dt-radius-default: 0\.25rem;/);
+    assert.match(cssContent, /--dt-space-24: 6rem;/);
+    assert.match(cssContent, /--dt-size-container: 80rem;/);
+    assert.match(cssContent, /--secondary: var\(--dt-color-intent-secondary/);
+    assert.equal((cssContent.match(/--secondary: var\(--dt-color-intent-secondary/g) || []).length, 2);
+    assert.doesNotMatch(cssContent, /hsl\(var/);
+    assert.equal(cssContent.includes("@theme inline"), version === 4);
+  }
+});
+
+test("Tailwind v3 export retains generated utilities and semantic defaults with valid JavaScript", () => {
+  let state = reducer(undefined, applyGeneration(palette()));
+  for (const result of [generateSpacing(), generateRadius(), generateSizing()]) state = reducer(state, applyGeneration(result));
+  const configContent = exportTailwindConfig(state.present);
   const sandbox = { module: { exports: {} }, require: () => () => {} };
   vm.runInNewContext(configContent, sandbox);
   const extension = sandbox.module.exports.theme.extend;
-  assert.equal(extension.spacing[24], "var(--space-24)");
-  assert.equal(extension.borderRadius.md, "var(--radius-md)");
-  assert.equal(extension.borderRadius.DEFAULT, "var(--radius--d-e-f-a-u-l-t)");
-  assert.equal(extension.maxWidth.container, "var(--size-container)");
-  assert.equal(extension.colors.secondary[500], "hsl(var(--color-secondary-500))");
-  assert.equal(extension.colors.white.DEFAULT, "hsl(var(--color-white--d-e-f-a-u-l-t))");
-  assert.equal((cssContent.match(/--secondary: var\(--color-intent-secondary/g) || []).length, 2);
+  assert.equal(extension.spacing[24], "var(--dt-space-24)");
+  assert.equal(extension.borderRadius.md, "var(--dt-radius-md)");
+  assert.equal(extension.borderRadius.DEFAULT, "var(--dt-radius-default)");
+  assert.equal(extension.width.container, "var(--dt-size-container)");
+  assert.equal(extension.maxWidth.container, "var(--dt-size-container)");
+  assert.match(extension.colors.secondary[500], /var\(--dt-color-secondary-500\)/);
+  assert.match(extension.colors.secondary.DEFAULT, /var\(--secondary\)/);
+  assert.match(extension.colors.white.DEFAULT, /var\(--dt-color-white-default\)/);
+  assert.doesNotMatch(configContent, /hsl\(var/);
+});
+
+test("theme validation and JSON import preserve every generated token, source, and recipe", () => {
+  const initial = reducer(undefined, { type: "init" });
+  let state = reducer(initial, applyGeneration(palette()));
+  for (const result of [generateSpacing(), generateRadius(), generateSizing()]) state = reducer(state, applyGeneration(result));
+  const validated = validateTheme(state.present);
+  assert.deepEqual(validated, state.present);
+  assert.notEqual(validated.generation, state.present.generation);
+  for (const record of Object.values(validated.generation)) {
+    assert.ok(Array.isArray(record.sources) && record.sources.length > 0);
+    assert.ok(Array.isArray(record.tokens) && record.tokens.length > 0);
+    assert.ok(record.tokens.every((token) => token.reason));
+  }
+  const exported = exportThemeJson(state.present);
+  const imported = importTheme(exported, initial.present).tokens;
+  assert.deepEqual(imported, state.present);
+  assert.deepEqual(validateTheme({ tokens: imported }), state.present);
+});
+
+test("theme import rejects malformed generation metadata and unsafe reference or token names", () => {
+  const { present } = reducer(undefined, applyGeneration(palette()));
+  const invalidRecipes = [
+    (recipe) => { recipe.tokens = {}; },
+    (recipe) => { recipe.sources[0].url = "javascript:alert(1)"; },
+    (recipe) => { recipe.tokens[0].key = "__proto__.500"; },
+    (recipe) => { recipe.tokens[1].key = recipe.tokens[0].key; },
+    (recipe) => { recipe.category = "radius"; },
+  ];
+  for (const invalidate of invalidRecipes) {
+    const theme = structuredClone(present);
+    invalidate(theme.generation.colors);
+    assert.throws(() => validateTheme(theme));
+    assert.throws(() => importTheme(JSON.stringify({ tokens: theme }), present));
+  }
 });
 
 test("manual edits are distinguished from source-backed generated values in exports", () => {

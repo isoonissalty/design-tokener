@@ -2,10 +2,11 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { GenerationCategory } from '@/types/generation';
 
 interface UiState {
-  activeMainTab: 'tokens' | 'components' | 'generate';
+  activeMainTab: 'tokens' | 'components' | 'templates' | 'generate';
   generatorCategory: GenerationCategory;
   isPreviewOpen: boolean;
   isPreviewDark: boolean;
+  previewTemplate: 'landing' | 'dashboard' | 'pricing';
 
   // Editor State
   activeEditorTab: string; // 'settings' | 'foundation' | 'semantic'
@@ -20,6 +21,7 @@ const initialState: UiState = {
   generatorCategory: 'colors',
   isPreviewOpen: false,
   isPreviewDark: false,
+  previewTemplate: 'landing',
   activeEditorTab: 'foundation',
   selectedEditorCategory: null,
   selectedComponentId: null,
@@ -29,8 +31,8 @@ export const uiSlice = createSlice({
   name: 'ui',
   initialState,
   reducers: {
-    setActiveMainTab: (state, action: PayloadAction<'tokens' | 'components' | 'generate'>) => {
-      state.activeMainTab = action.payload;
+    setActiveMainTab: (state, action: PayloadAction<UiState['activeMainTab'] | 'palette'>) => {
+      state.activeMainTab = action.payload === 'palette' ? 'generate' : action.payload;
     },
     setGeneratorCategory: (state, action: PayloadAction<GenerationCategory>) => {
       state.generatorCategory = action.payload;
@@ -43,6 +45,9 @@ export const uiSlice = createSlice({
     },
     setPreviewTheme: (state, action: PayloadAction<boolean>) => {
       state.isPreviewDark = action.payload;
+    },
+    setPreviewTemplate: (state, action: PayloadAction<UiState['previewTemplate']>) => {
+      state.previewTemplate = action.payload;
     },
     setActiveEditorTab: (state, action: PayloadAction<string>) => {
       state.activeEditorTab = action.payload;
@@ -65,6 +70,7 @@ export const {
   setPreviewOpen,
   togglePreviewTheme,
   setPreviewTheme,
+  setPreviewTemplate,
   setActiveEditorTab,
   setSelectedEditorCategory,
   setSelectedComponentId

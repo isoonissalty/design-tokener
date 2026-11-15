@@ -1,5 +1,6 @@
 "use client";
 
+import type { DesignTokenSettings } from "@/types/token-system";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateSettings } from "@/store/features/themeSlice";
 import { setActiveEditorTab, setSelectedEditorCategory, setActiveMainTab, setGeneratorCategory } from "@/store/features/uiSlice";
+
 import type { GenerationCategory } from "@/types/generation";
 import { GenerationDetails } from "./GenerationDetails";
 
@@ -27,6 +29,7 @@ const CollapsibleSection = ({ title, children, defaultOpen = false }: Collapsibl
               variant="ghost"
               className="w-full justify-start p-2 h-auto hover:bg-muted/50 rounded-none font-medium text-sm"
               onClick={() => setIsOpen(!isOpen)}
+              aria-expanded={isOpen}
             >
                 {isOpen ? <ChevronDown className="w-4 h-4 mr-2" /> : <ChevronRight className="w-4 h-4 mr-2" />}
                 {title}
@@ -48,7 +51,7 @@ export function GlobalTokenEditor() {
 
 
 
-  const handleUpdateSettings = useCallback((key: string, value: string) => {
+  const handleUpdateSettings = useCallback((key: keyof DesignTokenSettings, value: string) => {
     dispatch(updateSettings({ key, value }));
   }, [dispatch]);
 
@@ -68,19 +71,19 @@ export function GlobalTokenEditor() {
         );
       } else if (typeof value === "object" && value !== null) {
           // Special case for Semantic Color (light/dark)
-          if ("light" in value && "dark" in value && typeof value.light === "string" && typeof value.dark === "string") {
+          if ("light" in value && "dark" in value) {
               return (
                   <div key={key} className="mb-4 border-l-2 pl-2 border-muted">
                       <Label className="text-sm font-semibold mb-2 block">{key}</Label>
                       <TokenField
                         label="Light"
-                        value={value.light}
+                        value={String(value.light)}
                         path={[...currentPath, "light"]}
                         tokens={tokens}
                       />
                       <TokenField
                         label="Dark"
-                        value={value.dark}
+                        value={String(value.dark)}
                         path={[...currentPath, "dark"]}
                         tokens={tokens}
                       />
@@ -150,7 +153,7 @@ export function GlobalTokenEditor() {
       if (!data) return <div className="p-4">No data found</div>;
 
       return (
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full min-h-0">
               <div className="flex items-center gap-2 mb-4 shrink-0">
                   <Button variant="ghost" size="icon" onClick={() => dispatch(setSelectedEditorCategory(null))} className="h-8 w-8" aria-label="Back to categories">
                       <ArrowLeft className="w-4 h-4" />
@@ -160,7 +163,7 @@ export function GlobalTokenEditor() {
                     <Button variant="outline" size="sm" className="ml-auto" onClick={() => { dispatch(setGeneratorCategory(selectedCategory as GenerationCategory)); dispatch(setActiveMainTab("generate")); }}><WandSparkles className="h-3.5 w-3.5" />Generate</Button>
                   )}
               </div>
-              <div className="flex-1 overflow-y-auto pr-2">
+              <div className="flex-1 min-h-0 overflow-y-auto pr-2">
                   {activeTab === "foundation" && tokens.generation?.[selectedCategory as GenerationCategory] && (
                     <div className="mb-4"><GenerationDetails result={tokens.generation[selectedCategory as GenerationCategory]!} currentTokens={tokens} /></div>
                   )}
@@ -192,7 +195,7 @@ export function GlobalTokenEditor() {
                                 tokens={tokens}
                            />
                            <p className="text-xs text-muted-foreground mt-1">
-                               Sets the root font size (html). 1rem will equal this value.
+                               Scales rem-based token values in the preview. Exported CSS applies this size to html, so 1rem equals this value.
                            </p>
                        </div>
                    </div>

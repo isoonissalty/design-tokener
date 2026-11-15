@@ -7,9 +7,10 @@ interface TokenReferenceSelectorProps {
   onChange: (value: string) => void;
   options: { label: string; value: string; previewValue?: string }[];
   placeholder?: string;
+  ariaLabel?: string;
 }
 
-export function TokenReferenceSelector({ value, onChange, options, placeholder }: TokenReferenceSelectorProps) {
+export function TokenReferenceSelector({ value, onChange, options, placeholder, ariaLabel = "Token reference" }: TokenReferenceSelectorProps) {
   // Determine if the current value is in the options, if not, we might be in "custom/raw" mode
   // But this selector is strictly for picking from the list.
 
@@ -26,14 +27,14 @@ export function TokenReferenceSelector({ value, onChange, options, placeholder }
 
   return (
     <Select value={displayValue} onValueChange={onChange}>
-      <SelectTrigger className="w-full h-8 text-xs font-mono bg-white">
+      <SelectTrigger aria-label={ariaLabel} className="w-full h-8 text-xs font-mono bg-background">
         <SelectValue placeholder={placeholder || "Select token..."}>
              {displayValue}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent className="max-h-[200px] bg-white z-50">
+      <SelectContent className="max-h-[200px] bg-background z-50">
         {options.map((opt) => (
-          <SelectItem key={opt.value} value={opt.value} className="text-xs bg-white">
+          <SelectItem key={opt.value} value={opt.value} className="text-xs bg-background">
             <div className="flex items-center justify-between w-full gap-4">
                <span>{opt.label}</span>
                {opt.previewValue && (

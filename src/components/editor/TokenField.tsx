@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useId } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DesignTokenSystem } from "@/types/token-system";
+import type { DesignTokenSystem } from "@/types/token-system";
 import { TokenColorPicker } from "./TokenColorPicker";
 import { TokenReferenceSelector } from "./TokenReferenceSelector";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useAppDispatch } from "@/store/hooks";
 import { updateToken } from "@/store/features/themeSlice";
 
 interface TokenFieldProps {
@@ -21,173 +21,67 @@ interface TokenFieldProps {
 
 export function TokenField({ label, value, onChange, path, tokens, typeHint }: TokenFieldProps) {
   const dispatch = useAppDispatch();
-  const revision = useAppSelector((state) => state.theme.past.length);
-  const [draft, setDraft] = useState({ source: value, value, revision });
-  // Reset the draft during render when Undo, Load, or a generator changes it.
-  // Cancel the pending text commit below so it cannot overwrite that change.
-  if (draft.source !== value || draft.revision !== revision) setDraft({ source: value, value, revision });
-  const localValue = draft.source === value && draft.revision === revision ? draft.value : value;
-  const pendingCommit = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pathKey = JSON.stringify(path);
-  
-  // Use a ref to hold the latest path to avoid stale closures in memoized children
-  const pathRef = useRef(path);
-  useEffect(() => { pathRef.current = path; }, [path]);
-
-  // Stable update function that dispatches directly to Redux
-  // Use pathRef.current to always get the latest path value
-  const dispatchUpdate = useCallback((newValue: string) => {
-    if (onChange) {
-      onChange(newValue);
-    } else {
-      dispatch(updateToken({ path: pathRef.current, value: newValue }));
-    }
-  }, [dispatch, onChange]);
-
-  useEffect(() => () => {
-    if (pendingCommit.current) clearTimeout(pendingCommit.current);
-  }, [value, pathKey, revision]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const nextValue = e.target.value;
-    setDraft({ source: value, value: nextValue, revision });
-    if (pendingCommit.current) clearTimeout(pendingCommit.current);
-    if (nextValue !== value) pendingCommit.current = setTimeout(() => dispatchUpdate(nextValue), 500);
+  const inputId = useId();
+  const fieldLabel = `${path.join(" · ")} (${label})`;
+  // Keep one source of truth. Delayed local effects can replay stale values after
+  // undo, imports, palette selection, or navigating away from an input.
+  const update = (newValue: string) => {
+    if (onChange) onChange(newValue);
+    else dispatch(updateToken({ path, value: newValue }));
   };
 
-  const handleImmediateChange = useCallback((newValue: string) => {
-    if (pendingCommit.current) clearTimeout(pendingCommit.current);
-    setDraft({ source: value, value: newValue, revision });
-    if (newValue !== value) dispatchUpdate(newValue);
-  }, [dispatchUpdate, value, revision]);
-
-
-  // Determine Type
-  const isColor = typeHint === "color" ||
-                  path.some(p => p.toLowerCase().includes("color") || p.toLowerCase().includes("bg") || p.toLowerCase().includes("border") && !p.includes("Width"));
-
-  // Exclude borderWidth from being detected as color just because it has "border"
-  const isBorderWidth = path.some(p => p.toLowerCase().includes("width"));
-
-  const isSpacing = path.some(p => p.toLowerCase().includes("spacing") || p.toLowerCase().includes("padding") || p.toLowerCase().includes("gap"));
-  const isRadius = path.some(p => p.toLowerCase().includes("radius"));
-  const isTypographySize = path.some(p => p.toLowerCase().includes("fontsize"));
-  const isTypographyWeight = path.some(p => p.toLowerCase().includes("fontweight") || p.toLowerCase().includes("weight"));
-  const isFontFamily = path.some(p => p.toLowerCase().includes("fontfamily"));
-
-  // Foundation tokens are definitions, Semantic/Component tokens are references.
-  // If we are editing Foundation tokens, we usually want a text input or a color picker (hex).
-  // If we are editing Semantic/Component tokens, we want Reference Selectors.
+  const lowerPath = path.map(part => part.toLowerCase());
   const isFoundation = path[0] === "foundation";
+  const isBorderWidth = lowerPath.includes("borderwidth");
+  const isColor = !isBorderWidth && (typeHint === "color" || lowerPath.some(part => ["colors", "color", "bg", "border"].includes(part)));
+  const isSpacing = lowerPath.some(part => ["spacing", "padding", "gap"].includes(part));
+  const isRadius = lowerPath.includes("radius");
+  const isTypographySize = lowerPath.includes("fontsize");
+  const isTypographyWeight = lowerPath.some(part => ["fontweight", "weight"].includes(part));
+  const isFontFamily = lowerPath.includes("fontfamily");
+  const isLineHeight = lowerPath.includes("lineheight");
+  const isLetterSpacing = lowerPath.includes("letterspacing");
 
-  if (isFoundation || path[0] === "settings") {
-      // Editing the source of truth
-      if (isColor && !value.startsWith("{")) {
-          return (
-              <div className="flex items-center gap-2 mb-2">
-                  <Label className="w-32 truncate text-xs" title={label}>{label}</Label>
-                  <div className="flex-1 flex gap-2">
-                       <div className="relative">
-                            <Input
-                                type="color"
-                                value={value}
-                                onChange={(e) => handleImmediateChange(e.target.value)}
-                                className="w-8 h-8 p-0 border-0 rounded-md cursor-pointer shrink-0"
-                            />
-                        </div>
-                        <Input
-                            type="text"
-                            value={localValue}
-                            onChange={handleInputChange}
-                            className="h-8 text-xs font-mono"
-                        />
-                  </div>
-              </div>
-          );
-      }
-
-      // Font Weight Dropdown
-      if (isTypographyWeight) {
-          const weights = ["100", "200", "300", "400", "500", "600", "700", "800", "900"];
-          return (
-              <div className="flex items-center gap-2 mb-2">
-                  <Label className="w-32 truncate text-xs" title={label}>{label}</Label>
-                  <div className="flex-1">
-                      <Select value={localValue} onValueChange={handleImmediateChange}>
-                        <SelectTrigger className="h-8 text-xs w-full bg-white">
-                          <SelectValue placeholder="Select weight" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {weights.map(w => <SelectItem key={w} value={w} className="text-xs">{w}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                  </div>
-              </div>
-          );
-      }
-
-      // Default text input for other foundation values
-       return (
-          <div className="flex items-center gap-2 mb-2">
-              <Label className="w-32 truncate text-xs" title={label}>{label}</Label>
-              <Input
-                  type="text"
-                  value={localValue}
-                  onChange={handleInputChange}
-                  className="h-8 text-xs font-mono flex-1"
-              />
-          </div>
-      );
+  let options: { label: string; value: string; previewValue?: string }[] = [];
+  const references = (values: Record<string, string>, prefix: string) => Object.entries(values).map(([key, previewValue]) => ({ label: key, value: `{${prefix}.${key}}`, previewValue }));
+  if (!isFoundation) {
+    if (isSpacing) options = references(tokens.foundation.spacing, "space");
+    else if (isRadius) options = references(tokens.foundation.radius, "radius");
+    else if (isTypographySize) options = references(tokens.foundation.typography.size, "font.size");
+    else if (isTypographyWeight) options = references(tokens.foundation.typography.weight, "font.weight");
+    else if (isFontFamily) options = references(tokens.foundation.typography.family, "font.family");
+    else if (isLineHeight) options = references(tokens.foundation.typography.lineHeight, "line.height");
+    else if (isLetterSpacing) options = references(tokens.foundation.typography.letterSpacing, "letter.spacing");
   }
 
-  // Semantic / Component Mode -> Use Selectors
+  // Native color inputs accept six-digit hex only. Other CSS color formats remain
+  // editable in the text field without being silently replaced by black.
+  const nativeColor = /^#[0-9a-f]{6}$/i.test(value) ? value : /^#[0-9a-f]{3}$/i.test(value)
+    ? `#${value.slice(1).split("").map(char => char + char).join("")}` : null;
 
-  if (isColor && !isBorderWidth) {
-      return (
-        <div className="flex items-center gap-2 mb-2">
-            <Label className="w-32 truncate text-xs" title={label}>{label}</Label>
-            <div className="flex-1">
-                 <TokenColorPicker value={value} onChange={handleImmediateChange} tokens={tokens} />
-            </div>
-        </div>
-      );
-  }
-
-  // Generic Reference Selectors
-  let options: { label: string, value: string, previewValue?: string }[] = [];
-
-  if (isSpacing) {
-      options = Object.entries(tokens.foundation.spacing).map(([k, v]) => ({ label: k, value: `{space.${k}}`, previewValue: v }));
-  } else if (isRadius) {
-      options = Object.entries(tokens.foundation.radius).map(([k, v]) => ({ label: k, value: `{radius.${k}}`, previewValue: v }));
-  } else if (isTypographySize) {
-      options = Object.entries(tokens.foundation.typography.size).map(([k, v]) => ({ label: k, value: `{font.size.${k}}`, previewValue: v }));
-  } else if (isTypographyWeight) {
-      options = Object.entries(tokens.foundation.typography.weight).map(([k, v]) => ({ label: k, value: `{font.weight.${k}}`, previewValue: v }));
-  } else if (isFontFamily) {
-      options = Object.entries(tokens.foundation.typography.family).map(([k, v]) => ({ label: k, value: `{font.family.${k}}`, previewValue: v }));
-  }
-
-  if (options.length > 0) {
-      return (
-        <div className="flex items-center gap-2 mb-2">
-            <Label className="w-32 truncate text-xs" title={label}>{label}</Label>
-            <div className="flex-1">
-                 <TokenReferenceSelector value={value} onChange={handleImmediateChange} options={options} />
-            </div>
-        </div>
-      );
-  }
-
-  // Fallback to text input
   return (
-    <div className="flex items-center gap-2 mb-2">
-      <Label className="w-32 truncate text-xs" title={label}>{label}</Label>
-      <Input
-        value={localValue}
-        onChange={handleInputChange}
-        className="h-8 text-xs font-mono flex-1"
-      />
+    <div className="flex items-start gap-2 mb-3">
+      <Label htmlFor={inputId} className="w-24 shrink-0 truncate pt-2 text-xs sm:w-28" title={fieldLabel}>{label}</Label>
+      <div className="min-w-0 flex-1 space-y-2">
+        {isColor && !isFoundation && <TokenColorPicker value={value} onChange={update} tokens={tokens} ariaLabel={fieldLabel} />}
+        {options.length > 0 && <TokenReferenceSelector value={value} onChange={update} options={options} ariaLabel={`${fieldLabel} reference`} />}
+        {isFoundation && isTypographyWeight ? (
+          <Select value={value} onValueChange={update}>
+            <SelectTrigger id={inputId} aria-label={fieldLabel} className="h-8 text-xs w-full bg-background">
+              <SelectValue placeholder="Select weight" />
+            </SelectTrigger>
+            <SelectContent>
+              {["100", "200", "300", "400", "500", "600", "700", "800", "900"].map(weight => <SelectItem key={weight} value={weight}>{weight}</SelectItem>)}
+              {!/^[1-9]00$/.test(value) && value && <SelectItem value={value}>{value}</SelectItem>}
+            </SelectContent>
+          </Select>
+        ) : (
+          <div className="flex min-w-0 gap-2">
+            {isColor && nativeColor && <Input type="color" value={nativeColor} onChange={event => update(event.target.value)} aria-label={`${fieldLabel} color picker`} className="w-8 h-8 p-0 border-0 rounded-md cursor-pointer shrink-0" />}
+            <Input id={inputId} aria-label={fieldLabel} value={value} onChange={event => update(event.target.value)} className="h-8 min-w-0 text-xs font-mono flex-1" spellCheck={false} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

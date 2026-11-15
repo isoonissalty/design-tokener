@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
-import { DesignTokenSystem } from "@/types/token-system";
-import { generateTokenCss } from "@/lib/css-generator";
+import React, { useId, useMemo } from "react";
+import type { DesignTokenSystem } from "@/types/token-system";
+import { generateTokenCss, processTokenValue, themeColorMappings } from "@/lib/css-generator";
 
 interface ThemeWrapperProps {
   tokens: DesignTokenSystem;
@@ -10,96 +10,71 @@ interface ThemeWrapperProps {
   className?: string;
 }
 
-export function ThemeWrapper({ tokens, children, className }: ThemeWrapperProps) {
+const typographyRules = (selector: string, token: string) => `${selector} {
+  font-family: var(--text-${token}-font-family);
+  font-size: var(--text-${token}-font-size);
+  font-weight: var(--text-${token}-font-weight);
+  line-height: var(--text-${token}-line-height);
+  letter-spacing: var(--text-${token}-letter-spacing);
+}`;
 
-  const { root: cssVarsRoot, dark: cssVarsDark } = generateTokenCss(tokens);
-  const baseFontSize = tokens.settings?.baseFontSize || "16px";
-  const configuredRoot = /^(\d+(?:\.\d+)?)px$/.exec(baseFontSize.trim());
-  const rootPx = configuredRoot && Number(configuredRoot[1]) > 0 ? Number(configuredRoot[1]) : 16;
-  // A preview's font-size cannot change rem, which always uses the document
-  // root. Resolve token rem lengths here so editor dimensions stay isolated.
-  const previewValue = (value: string) => value.replace(/(-?(?:\d+\.?\d*|\.\d+))rem\b/g, (_, length: string) => `${Number(length) * rootPx}px`);
+export function ThemeWrapper({ tokens, children, className = "" }: ThemeWrapperProps) {
+  const scope = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const css = useMemo(() => {
+    const { root, dark } = generateTokenCss(tokens, { preview: true });
+    const selector = `.preview-root[data-theme-scope="${scope}"]`;
+    const baseFontSize = processTokenValue(tokens.settings?.baseFontSize || "16px");
+    return `
+      ${selector} {
+        ${root.join("\n")}
+        ${themeColorMappings}
+        font-size: ${baseFontSize};
+        font-family: var(--text-body-base-font-family);
+        line-height: var(--text-body-base-line-height);
+        color: var(--foreground);
+      }
+      ${selector}.dark, ${selector} .dark {
+        ${root.join("\n")}
+        ${dark.join("\n")}
+        ${themeColorMappings}
+        color: var(--foreground);
+      }
+      ${typographyRules(`${selector} h1`, "heading-h1")}
+      ${typographyRules(`${selector} h2`, "heading-h2")}
+      ${typographyRules(`${selector} h3`, "heading-h3")}
+      ${typographyRules(`${selector} p`, "body-base")}
+      ${typographyRules(`${selector} label`, "label")}
+      ${selector} [data-variant] {
+        border-radius: var(--button-radius);
+        transition-duration: var(--motion-duration-fast);
+        transition-timing-function: var(--motion-easing-standard);
+      }
+      ${selector} [data-variant]:not([data-size="icon"]) {
+        height: auto;
+        min-height: 2.25rem;
+        padding: var(--button-padding-y) var(--button-padding-x);
+      }
+      ${selector} [data-variant="default"] {
+        background: var(--button-bg-default);
+        color: var(--button-text-default);
+      }
+      ${selector} [data-variant="default"]:hover {
+        background: var(--button-bg-hover);
+      }
+      ${selector} [data-variant="default"]:active {
+        background: var(--button-bg-active);
+      }
+      ${selector} [data-variant="default"]:disabled {
+        background: var(--button-bg-disabled);
+        opacity: var(--opacity-disabled);
+      }
+    `;
+  }, [tokens, scope]);
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: `
-        .preview-root {
-          font-size: ${rootPx}px;
-        }
-        .preview-root {
-          ${cssVarsRoot.map(previewValue).join("\n")}
-        }
-        .preview-root .dark {
-          ${cssVarsDark.map(previewValue).join("\n")}
-        }
-
-        /* Map V1 Tokens to Shadcn/Tailwind Theme Variables */
-        .preview-root {
-            --background: var(--color-bg-canvas);
-            --foreground: var(--color-text-primary);
-
-            --card: var(--color-bg-surface);
-            --card-foreground: var(--color-text-primary);
-
-            --popover: var(--color-bg-surface);
-            --popover-foreground: var(--color-text-primary);
-
-            --primary: var(--color-intent-primary);
-            --primary-foreground: var(--color-intent-on-primary, var(--color-text-inverse));
-
-            --secondary: var(--color-intent-secondary, var(--color-bg-subtle));
-            --secondary-foreground: var(--color-intent-on-secondary, var(--color-text-primary));
-
-            --muted: var(--color-bg-subtle);
-            --muted-foreground: var(--color-text-secondary);
-
-            --accent: var(--color-bg-subtle);
-            --accent-foreground: var(--color-text-primary);
-
-            --destructive: var(--color-intent-error);
-            --destructive-foreground: var(--color-text-inverse);
-
-            --border: var(--color-border-default);
-            --input: var(--color-border-default);
-            --ring: var(--color-border-focus);
-
-            --radius: var(--radius-md);
-        }
-
-        /* Override shadcn's default .dark values - use the same token mappings */
-        .preview-root .dark {
-            --background: var(--color-bg-canvas);
-            --foreground: var(--color-text-primary);
-
-            --card: var(--color-bg-surface);
-            --card-foreground: var(--color-text-primary);
-
-            --popover: var(--color-bg-surface);
-            --popover-foreground: var(--color-text-primary);
-
-            --primary: var(--color-intent-primary);
-            --primary-foreground: var(--color-intent-on-primary, var(--color-text-inverse));
-
-            --secondary: var(--color-intent-secondary, var(--color-bg-subtle));
-            --secondary-foreground: var(--color-intent-on-secondary, var(--color-text-primary));
-
-            --muted: var(--color-bg-subtle);
-            --muted-foreground: var(--color-text-secondary);
-
-            --accent: var(--color-bg-subtle);
-            --accent-foreground: var(--color-text-primary);
-
-            --destructive: var(--color-intent-error);
-            --destructive-foreground: var(--color-text-inverse);
-
-            --border: var(--color-border-default);
-            --input: var(--color-border-default);
-            --ring: var(--color-border-focus);
-
-            --radius: var(--radius-md);
-        }
-      `}} />
-      <div className={`${className} preview-root preview-area`}>
+      <style>{css}</style>
+      <div data-theme-scope={scope} className={`${className} preview-root preview-area`}>
         {children}
       </div>
     </>

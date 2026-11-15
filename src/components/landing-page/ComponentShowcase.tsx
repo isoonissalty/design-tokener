@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 
 export function ComponentShowcase() {
   const [tab, setTab] = useState("general");
+  const id = useId();
 
   return (
     <section className="py-24 bg-background text-foreground">
@@ -32,12 +33,12 @@ export function ComponentShowcase() {
              </CardHeader>
              <CardContent className="space-y-4">
                <div className="space-y-2">
-                 <Label htmlFor="email">Email</Label>
-                 <Input id="email" placeholder="m@example.com" />
+                 <Label htmlFor={`${id}-email`}>Email</Label>
+                 <Input id={`${id}-email`} type="email" placeholder="m@example.com" />
                </div>
                <div className="space-y-2">
-                 <Label htmlFor="password">Password</Label>
-                 <Input id="password" type="password" />
+                 <Label htmlFor={`${id}-password`}>Password</Label>
+                 <Input id={`${id}-password`} type="password" />
                </div>
              </CardContent>
              <CardFooter>
@@ -60,11 +61,11 @@ export function ComponentShowcase() {
                   <TabsContent value="general" className="space-y-4">
                      <div className="space-y-2">
                        <Label>Volume</Label>
-                       <Slider defaultValue={[50]} max={100} step={1} />
+                       <Slider aria-label="Volume" defaultValue={[50]} max={100} step={1} />
                      </div>
                      <div className="space-y-2">
                        <Label>Brightness</Label>
-                       <Slider defaultValue={[75]} max={100} step={1} />
+                       <Slider aria-label="Brightness" defaultValue={[75]} max={100} step={1} />
                      </div>
                   </TabsContent>
                   <TabsContent value="notifications">

@@ -22,14 +22,15 @@ const categories: { id: GenerationCategory; label: string }[] = [
 function PalettePreview({ result }: { result: GenerationResult }) {
   return (
     <div className="space-y-4" aria-label="Generated palette preview">
-      {["primary", "secondary"].map((family) => {
+      {["primary", "secondary"].map((role) => {
+        const family = result.parameters[`${role}Name`] || role;
         const tokens = result.tokens.filter((token) => token.key.startsWith(`${family}.`));
         const seed = tokens.find((token) => token.key.endsWith(".500"))?.value || "#000000";
         const foreground = readableForeground(seed);
         return (
           <div key={family} className="space-y-2">
             <div className="flex items-center justify-between gap-2 text-xs">
-              <span className="font-medium capitalize">{family}</span>
+              <span className="font-medium capitalize">{role}{family !== role ? ` · ${family}` : ""}</span>
               <span className="font-mono text-muted-foreground">500 = {seed}</span>
             </div>
             <div className="grid grid-cols-11 gap-0.5">
@@ -41,7 +42,7 @@ function PalettePreview({ result }: { result: GenerationResult }) {
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <span className="rounded-md px-3 py-1.5 text-xs font-medium capitalize" style={{ backgroundColor: seed, color: foreground }}>{family} example</span>
+              <span className="rounded-md px-3 py-1.5 text-xs font-medium capitalize" style={{ backgroundColor: seed, color: foreground }}>{role} example</span>
               <span className="text-[11px] text-muted-foreground">Text on seed: {contrastRatio(seed, foreground).toFixed(2)}:1</span>
             </div>
           </div>
@@ -125,7 +126,7 @@ export function GeneratorPanel() {
         <Button className="w-full" disabled={!result || applied} onClick={() => result && dispatch(applyGeneration(result))}>
           {applied ? <Check className="h-4 w-4" /> : <WandSparkles className="h-4 w-4" />}{applied ? `${category === "colors" ? "Palette" : categories.find((item) => item.id === category)?.label} applied` : `Apply ${label}`}
         </Button>
-        <p className="text-center text-[11px] leading-relaxed text-muted-foreground" role="status">{applied ? "Applied to your foundation and live preview. Use Undo to restore." : category === "colors" ? "Adds primary + secondary palettes and connects them to your preview." : "Updates matching foundation tokens. Each apply can be undone."}</p>
+        <p className="text-center text-[11px] leading-relaxed text-muted-foreground" role="status">{applied ? "Applied to your foundation. Use Undo to restore." : category === "colors" ? result?.parameters.makePrimary === "false" ? "Adds named foundation palettes. Each apply can be undone." : "Adds primary + secondary palettes and connects them to your preview." : "Updates matching foundation tokens. Each apply can be undone."}</p>
       </div>
     </div>
   );
