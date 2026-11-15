@@ -3,6 +3,7 @@ import type { DesignTokenSettings, DesignTokenSystem } from '@/types/token-syste
 import { defaultDesignTokens } from '@/lib/token-defaults';
 import type { GenerationResult } from '@/types/generation';
 import { contrastRatio, isValidHex, readableForeground } from '@/lib/palette-generator';
+import { resolveFontFamily } from '@/lib/font-options';
 
 export interface ThemeState {
   past: DesignTokenSystem[];
@@ -37,6 +38,20 @@ export const themeSlice = createSlice({
   name: 'theme',
   initialState,
   reducers: {
+    applyFontSetup: (state, action: PayloadAction<{ en: string; th: string }>) => {
+      const { en, th } = action.payload;
+      const family = state.present.foundation.typography.family;
+      const sans = '{font.family.en}, {font.family.th}, sans-serif';
+      // Imported choices can retain aliases. Check the prospective graph after
+      // replacing sans, since a language alias back to sans would create a cycle.
+      const proposed = { ...family, en, th, sans };
+      if (resolveFontFamily(proposed, 'sans') === undefined) return;
+      if (family.en === en && family.th === th && family.sans === sans) return;
+      remember(state);
+      family.en = en;
+      family.th = th;
+      family.sans = sans;
+    },
     applyGeneration: (state, action: PayloadAction<GenerationResult>) => {
       const result = action.payload;
       if (!['colors', 'spacing', 'radius', 'sizing'].includes(result.category) || !result.tokens.length) return;
@@ -126,5 +141,5 @@ export const themeSlice = createSlice({
   },
 });
 
-export const { applyGeneration, setTokens, updateToken, updateSettings, undo, redo, reset, load } = themeSlice.actions;
+export const { applyFontSetup, applyGeneration, setTokens, updateToken, updateSettings, undo, redo, reset, load } = themeSlice.actions;
 export default themeSlice.reducer;

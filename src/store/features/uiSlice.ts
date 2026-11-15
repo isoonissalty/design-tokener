@@ -4,7 +4,7 @@ import { applyGeneration, load, redo, reset, setTokens, undo } from './themeSlic
 import type { PreviewTemplateId } from '@/lib/preview-templates';
 
 interface UiState {
-  activeMainTab: 'tokens' | 'components' | 'templates' | 'generate';
+  activeMainTab: 'tokens' | 'fonts' | 'components' | 'templates' | 'generate';
   generatorCategory: GenerationCategory;
   isPreviewOpen: boolean;
   isPreviewDark: boolean;

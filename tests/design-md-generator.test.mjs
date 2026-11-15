@@ -217,6 +217,25 @@ test("supports legacy tokens without settings and does not mutate input", () => 
   assert.deepEqual(tokens, before);
 });
 
+test("bilingual font contract resolves both families and documents their loading requirements", () => {
+  const tokens = structuredClone(defaultDesignTokens);
+  Object.assign(tokens.foundation.typography.family, {
+    en: '"Inter"', th: '"Noto Sans Thai"', sans: '{font.family.en}, {font.family.th}, sans-serif',
+  });
+  tokens.semantic.typography.heading.h1.fontFamily = '{font.family.serif}';
+  const before = structuredClone(tokens);
+  const { markdown, data } = generate(tokens);
+
+  assert.equal(data.typography["body-base"].fontFamily, '"Inter", "Noto Sans Thai", sans-serif');
+  assert.equal(data.typography["heading-h1"].fontFamily, tokens.foundation.typography.family.serif);
+  assert.match(markdown, /English font:.*Inter/);
+  assert.match(markdown, /Thai font:.*Noto Sans Thai/);
+  assert.match(markdown, /https:\/\/fonts\.googleapis\.com\/css2\?/);
+  assert.match(markdown, /font-display: swap/);
+  assert.match(markdown, /mixed Thai\/English text/);
+  assert.deepEqual(tokens, before);
+});
+
 test("export format selection preserves existing formats and generates DESIGN.md from current tokens", () => {
   const tokens = structuredClone(defaultDesignTokens);
   // These edits are deliberately never saved to local storage.

@@ -13,6 +13,9 @@ export interface FoundationTypography {
     sans: TokenValue;
     serif: TokenValue;
     mono: TokenValue;
+    /** Optional language choices keep older themes compatible. */
+    en?: TokenValue;
+    th?: TokenValue;
   };
   size: {
     xs: TokenValue;

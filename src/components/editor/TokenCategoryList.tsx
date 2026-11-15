@@ -20,7 +20,7 @@ export function TokenCategoryList({ categories, onSelect }: TokenCategoryListPro
   const [search, setSearch] = useState("");
 
   const filtered = categories.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase())
+    `${c.name} ${c.description ?? ""}`.toLowerCase().includes(search.toLowerCase().trim())
   );
 
   return (

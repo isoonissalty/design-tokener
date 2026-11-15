@@ -11,6 +11,7 @@ import { SettingsPreview } from "./SettingsPreview";
 import { ComponentGalleryPreview } from "./ComponentGalleryPreview";
 import { StorefrontPreview } from "./StorefrontPreview";
 import { ArticlePreview } from "./ArticlePreview";
+import { FontPreview } from "./FontPreview";
 
 interface PreviewThemeProps {
   isDark: boolean;
@@ -30,6 +31,7 @@ const previewViews: Record<PreviewTemplateId, ComponentType<PreviewThemeProps>> 
   components: ComponentGalleryPreview,
   storefront: StorefrontPreview,
   article: ArticlePreview,
+  fonts: FontPreview,
 };
 
 function PreviewHeader({ isDark, toggleTheme, title }: PreviewThemeProps & { title: string }) {
