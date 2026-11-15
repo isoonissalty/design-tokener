@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --import ./tests/register.mjs --test tests/*.test.mjs",
+    "test": "node --import ./tests/register.mjs --test tests/*.test.mjs && node --require ./tests/register.cjs --test tests/*.test.cjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

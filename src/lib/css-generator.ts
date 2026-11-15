@@ -21,8 +21,8 @@ export const themeColorMappings = `
   --popover-foreground: var(--color-text-primary);
   --primary: var(--color-intent-primary);
   --primary-foreground: var(--button-text-default);
-  --secondary: var(--color-bg-subtle);
-  --secondary-foreground: var(--color-text-primary);
+  --secondary: var(--color-intent-secondary, var(--color-bg-subtle));
+  --secondary-foreground: var(--color-intent-on-secondary, var(--color-text-primary));
   --muted: var(--color-bg-subtle);
   --muted-foreground: var(--color-text-secondary);
   --accent: var(--color-bg-subtle);

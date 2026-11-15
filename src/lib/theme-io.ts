@@ -1,5 +1,6 @@
 import { defaultDesignTokens } from "./token-defaults";
 import type { DesignTokenSystem, SemanticColorValue } from "../types/token-system";
+import { generationComments } from "./generation-provenance";
 
 const MAX_IMPORT_SIZE = 1024 * 1024;
 const FORBIDDEN_KEYS = new Set(["__proto__", "constructor", "prototype"]);
@@ -57,10 +58,59 @@ function validateTree(value: unknown, example: unknown, path: string): void {
   }
 }
 
+function metadataText(value: unknown, path: string, limit = 4096): asserts value is string {
+  if (typeof value !== "string" || !value.trim() || value.length > limit || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value)) {
+    throw new Error(`${path} must be nonempty text (up to ${limit.toLocaleString("en-US")} characters).`);
+  }
+}
+
+/** Provenance is descriptive data, not part of the CSS token tree. */
+function validateGeneration(value: unknown): void {
+  if (!record(value)) throw new Error("generation must be an object.");
+  const categories = new Set(["colors", "spacing", "radius", "sizing"]);
+  for (const [category, recipe] of Object.entries(value)) {
+    if (!categories.has(category) || !record(recipe)) throw new Error(`Unsupported generation category: ${category}.`);
+    const path = `generation.${category}`;
+    const fields = new Set(["category", "title", "summary", "parameters", "sources", "tokens"]);
+    if (Object.keys(recipe).some(key => !fields.has(key)) || recipe.category !== category) throw new Error(`${path} has unsupported fields or a mismatched category.`);
+    metadataText(recipe.title, `${path}.title`, 256);
+    metadataText(recipe.summary, `${path}.summary`);
+    if (!record(recipe.parameters) || Object.keys(recipe.parameters).length > 64) throw new Error(`${path}.parameters must be an object with at most 64 entries.`);
+    for (const [key, parameter] of Object.entries(recipe.parameters)) {
+      if (FORBIDDEN_KEYS.has(key) || !keyPattern.test(key)) throw new Error(`Unsupported generation parameter: ${key}.`);
+      metadataText(parameter, `${path}.parameters.${key}`);
+    }
+    if (!Array.isArray(recipe.sources) || recipe.sources.length > 20) throw new Error(`${path}.sources must be an array with at most 20 references.`);
+    for (const source of recipe.sources) {
+      if (!record(source) || Object.keys(source).some(key => key !== "title" && key !== "url")) throw new Error(`${path}.sources contains an invalid reference.`);
+      metadataText(source.title, `${path}.sources.title`, 256);
+      metadataText(source.url, `${path}.sources.url`, 2048);
+      let url: URL;
+      try { url = new URL(source.url); } catch { throw new Error(`${path}.sources must use valid HTTPS URLs.`); }
+      if (url.protocol !== "https:" || url.username || url.password) throw new Error(`${path}.sources must use HTTPS URLs without credentials.`);
+    }
+    if (!Array.isArray(recipe.tokens) || !recipe.tokens.length || recipe.tokens.length > 500) throw new Error(`${path}.tokens must be an array with 1–500 entries.`);
+    const names = new Set<string>();
+    for (const token of recipe.tokens) {
+      if (!record(token) || Object.keys(token).some(key => key !== "key" && key !== "value" && key !== "reason")) throw new Error(`${path}.tokens contains an invalid generated token.`);
+      metadataText(token.key, `${path}.tokens.key`, 256);
+      const parts = token.key.split(".");
+      if (parts.length !== (category === "colors" ? 2 : 1) || parts.some(key => FORBIDDEN_KEYS.has(key) || !keyPattern.test(key)) || names.has(token.key)) throw new Error(`${path}.tokens contains an unsafe or duplicate token key.`);
+      names.add(token.key);
+      safeValue(token.value, `${path}.tokens.${token.key}.value`);
+      metadataText(token.reason, `${path}.tokens.${token.key}.reason`);
+    }
+  }
+}
+
 /** Validate before a theme reaches Redux or generates CSS. Returns an independent copy. */
 export function validateTheme(input: unknown): DesignTokenSystem {
   const candidate = record(input) && "tokens" in input ? input.tokens : input;
-  validateTree(candidate, defaultDesignTokens, "");
+  if (!record(candidate)) throw new Error("Theme must be an object.");
+  const tokenTree = { ...candidate };
+  delete tokenTree.generation;
+  validateTree(tokenTree, defaultDesignTokens, "");
+  if ("generation" in candidate) validateGeneration(candidate.generation);
   const result = JSON.parse(JSON.stringify(candidate)) as DesignTokenSystem;
   validateAliases(result);
   return result;
@@ -131,12 +181,17 @@ const semanticAliases: Record<string, string[]> = {
   border: ["border", "default"], input: ["border", "default"], ring: ["border", "focus"],
 };
 
-function aliasTokenPath(alias: string): string[] {
-  return alias === "primary-foreground" ? ["components", "button", "text", "default"] : ["semantic", "colors", ...semanticAliases[alias]];
+function aliasTokenPath(alias: string, tokens: DesignTokenSystem): string[] {
+  if (alias === "primary-foreground") return ["components", "button", "text", "default"];
+  if (alias === "secondary" && tokens.semantic.colors.intent.secondary) return ["semantic", "colors", "intent", "secondary"];
+  if (alias === "secondary-foreground" && tokens.semantic.colors.intent.onSecondary) return ["semantic", "colors", "intent", "onSecondary"];
+  return ["semantic", "colors", ...semanticAliases[alias]];
 }
 
-function aliasCssName(alias: string): string {
-  return alias === "primary-foreground" ? "button-text-default" : `color-${semanticAliases[alias].join("-")}`;
+function aliasCssName(alias: string, tokens: DesignTokenSystem): string {
+  if (alias === "primary-foreground") return "button-text-default";
+  const path = aliasTokenPath(alias, tokens);
+  return `color-${path.slice(2).map(kebab).join("-")}`;
 }
 
 function exportedValue(value: string): string {
@@ -169,10 +224,10 @@ export function exportThemeCss(tokens: DesignTokenSystem, tailwindVersion: 3 | 4
   const dark = declarations("dark");
   // Rebind aliases in each mode: inherited custom properties resolve in their defining scope.
   for (const target of [root, dark]) {
-    Object.keys(semanticAliases).forEach((alias) => target.push(`  --${alias}: var(--dt-${aliasCssName(alias)});`));
+    Object.keys(semanticAliases).forEach((alias) => target.push(`  --${alias}: var(--dt-${aliasCssName(alias, tokens)});`));
     target.push("  --radius: var(--dt-radius-md);");
   }
-  let css = `${tailwindVersion === 4 ? '@import "tailwindcss";\n\n@custom-variant dark (&:where(.dark, .dark *));\n\n' : ''}/* Generated by Design Token Builder. Import this CSS to edit the theme again. */\n:root {\n${root.join("\n")}\n}\n\n.dark {\n${dark.join("\n")}\n}\n\nhtml { font-size: var(--dt-base-font-size); }\n`;
+  let css = `${tailwindVersion === 4 ? '@import "tailwindcss";\n\n@custom-variant dark (&:where(.dark, .dark *));\n\n' : ''}${generationComments(tokens)}/* Generated by Design Token Builder. Import this CSS to edit the theme again. */\n:root {\n${root.join("\n")}\n}\n\n.dark {\n${dark.join("\n")}\n}\n\nhtml { font-size: var(--dt-base-font-size); }\n`;
   if (tailwindVersion === 4) {
     const theme = list.flatMap((token) => {
       const name = utilityName(token.name);
@@ -191,13 +246,18 @@ export function exportTailwindConfig(tokens: DesignTokenSystem): string {
   const colorValue = (variable: string) => `color-mix(in srgb, var(${variable}) calc(<alpha-value> * 100%), transparent)`;
   const variableMap = (values: Record<string, string>, prefix: string, color = false) => Object.fromEntries(Object.keys(values).map((key) => [key, color ? colorValue(`--dt-${prefix}-${kebab(key)}`) : `var(--dt-${prefix}-${kebab(key)})`]));
   extend.colors = Object.fromEntries(Object.entries(tokens.foundation.colors).map(([family, shades]) => [family, variableMap(shades, `color-${kebab(family)}`, true)]));
-  Object.keys(semanticAliases).forEach((name) => (extend.colors as Record<string, unknown>)[name] = colorValue(`--${name}`));
+  Object.keys(semanticAliases).forEach((name) => {
+    const colors = extend.colors as Record<string, unknown>;
+    colors[name] = record(colors[name]) ? { ...colors[name], DEFAULT: colorValue(`--${name}`) } : colorValue(`--${name}`);
+  });
   extend.fontFamily = variableMap(tokens.foundation.typography.family, "font-family");
   extend.fontSize = variableMap(tokens.foundation.typography.size, "font-size");
   extend.fontWeight = variableMap(tokens.foundation.typography.weight, "font-weight");
   extend.lineHeight = variableMap(tokens.foundation.typography.lineHeight, "line-height");
   extend.letterSpacing = variableMap(tokens.foundation.typography.letterSpacing, "letter-spacing");
   extend.spacing = variableMap(tokens.foundation.spacing, "space");
+  extend.width = variableMap(tokens.foundation.sizing, "size");
+  extend.maxWidth = variableMap(tokens.foundation.sizing, "size");
   extend.borderRadius = variableMap(tokens.foundation.radius, "radius");
   extend.borderWidth = variableMap(tokens.foundation.borderWidth, "border-width");
   extend.boxShadow = Object.fromEntries(Object.keys(tokens.semantic.shadow).map((name) => [name, `var(--dt-shadow-${name}-x) var(--dt-shadow-${name}-y) var(--dt-shadow-${name}-blur) var(--dt-shadow-${name}-spread) var(--dt-shadow-${name}-color)`]));
@@ -308,6 +368,14 @@ export function importTheme(source: string, current: DesignTokenSystem): ImportR
     }
   }
   const next = JSON.parse(JSON.stringify(current)) as DesignTokenSystem;
+  // Generated themes can carry optional intent roles absent from older themes.
+  // Register these before resolving imported aliases so they stay semantic roles.
+  for (const name of ["secondary", "onPrimary", "onSecondary"] as const) {
+    const cssName = `color-intent-${kebab(name)}`;
+    if ([`--dt-${cssName}`, `--${cssName}`].some(variable => root.has(variable) || dark.has(variable))) {
+      next.semantic.colors.intent[name] ??= { light: "#000000", dark: "#000000" };
+    }
+  }
   const known = new Map(entries(next).map((entry) => [entry.name, entry]));
   const namesByPath = new Map([...known.values()].map((entry) => [entry.path.join("."), entry.name]));
   const cssToAlias = new Map<string, string>();
@@ -374,7 +442,7 @@ export function importTheme(source: string, current: DesignTokenSystem): ImportR
       if (!entry && /-(light|dark)$/.test(name) && known.get(name.replace(/-(light|dark)$/, ""))?.dark !== undefined) continue;
       let path = entry?.path;
       const aliasName = name.startsWith("color-") ? name.slice(6) : name;
-      if (!path && semanticAliases[aliasName]) path = aliasTokenPath(aliasName);
+      if (!path && semanticAliases[aliasName]) path = aliasTokenPath(aliasName, next);
       if (!path) {
         const standard = name.replace(/^font-/, "font-family-").replace(/^text-/, "font-size-").replace(/^leading-/, "line-height-").replace(/^tracking-/, "letter-spacing-").replace(/^spacing-/, "space-").replace(/^ease-/, "motion-easing-");
         entry = known.get(standard); path = entry?.path;

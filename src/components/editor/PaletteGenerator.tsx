@@ -1,72 +1,116 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
-import { Check, Shuffle, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { applyGeneratedPalette, generatePalette, isValidPaletteName, normalizeHexColor, PALETTE_SHADES, randomPaletteSeed } from "@/lib/palette-generator";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setTokens } from "@/store/features/themeSlice";
+import { generatePalette, deriveSecondaryColor, isValidHex, normalizeHex, isValidPaletteName, randomPaletteSeed, type PaletteMethod, type SecondaryRelationship } from "@/lib/palette-generator";
+import { useAppSelector } from "@/store/hooks";
+import type { GenerationResult } from "@/types/generation";
 
-export function PaletteGenerator() {
-  const id = useId();
-  const dispatch = useAppDispatch();
-  const tokens = useAppSelector((state) => state.theme.present);
-  const [seed, setSeed] = useState("#6366f1");
-  const [name, setName] = useState("brand");
-  const [makePrimary, setMakePrimary] = useState(true);
-  const [status, setStatus] = useState("");
-  const normalizedSeed = normalizeHexColor(seed);
-  const palette = useMemo(() => normalizedSeed ? generatePalette(normalizedSeed) : null, [normalizedSeed]);
-  const normalizedName = name.trim().toLowerCase();
-  const validName = isValidPaletteName(normalizedName);
-  const isExisting = Object.hasOwn(tokens.foundation.colors, normalizedName);
+const methodNotes: Record<PaletteMethod, string> = {
+  oklch: "Perceptual lightness with a consistent hue. Chroma is reduced where needed to fit sRGB displays.",
+  hsl: "A familiar hue and saturation scale. Equal lightness steps can look uneven across different hues.",
+  rgb: "Mixes the seed with white for tints and black for shades in encoded sRGB.",
+};
 
-  function apply() {
-    if (!palette || !validName) return;
-    dispatch(setTokens(applyGeneratedPalette(tokens, normalizedName, palette, makePrimary)));
-    setStatus(`Applied ${normalizedName}. Refine its shades in Foundation → Colors, or undo to restore your previous theme.`);
-  }
+export function PaletteGenerator({ onChange, initial }: { onChange: (result: GenerationResult | null) => void; initial?: GenerationResult }) {
+  const colors = useAppSelector((state) => state.theme.present.foundation.colors);
+  const [method, setMethod] = useState<PaletteMethod>(() => {
+    const value = initial?.parameters.method;
+    return value === "hsl" || value === "rgb" ? value : "oklch";
+  });
+  const [primary, setPrimary] = useState(initial?.parameters.primary || "#3b82f6");
+  const [secondary, setSecondary] = useState(initial?.parameters.secondary || "#8b5cf6");
+  const [primaryName, setPrimaryName] = useState(initial?.parameters.primaryName || "primary");
+  const [secondaryName, setSecondaryName] = useState(initial?.parameters.secondaryName || "secondary");
+  const [makePrimary, setMakePrimary] = useState(initial?.parameters.makePrimary !== "false");
+  const [relationship, setRelationship] = useState<SecondaryRelationship>(() => {
+    const value = initial?.parameters.relationship;
+    return value === "analogous" || value === "complementary" || value === "triadic" ? value : "custom";
+  });
+
+  const primaryValid = isValidHex(primary);
+  const secondaryValid = isValidHex(secondary);
+  const normalizedPrimaryName = primaryName.trim().toLowerCase();
+  const normalizedSecondaryName = secondaryName.trim().toLowerCase();
+  const primaryNameValid = isValidPaletteName(normalizedPrimaryName);
+  const secondaryNameValid = isValidPaletteName(normalizedSecondaryName) && normalizedSecondaryName !== normalizedPrimaryName;
+  const displayedSecondary = relationship !== "custom" && primaryValid ? deriveSecondaryColor(primary, relationship, method) : secondary;
+  const result = useMemo(() => {
+    if (!isValidHex(primary) || (relationship === "custom" && !isValidHex(secondary)) || !primaryNameValid || !secondaryNameValid) return null;
+    const generated = generatePalette({ primary, secondary: relationship === "custom" ? secondary : primary, method, relationship });
+    return {
+      ...generated,
+      summary: `${generated.summary.replace(/The live theme uses .*$/, "")}${makePrimary ? "Applies both named palettes to the theme's primary and secondary colors, with matching focus and button states." : "Adds foundation palettes only; semantic colors and button mappings keep their current values."}`,
+      parameters: { ...generated.parameters, primaryName: normalizedPrimaryName, secondaryName: normalizedSecondaryName, makePrimary: String(makePrimary) },
+      tokens: generated.tokens.map((token) => ({ ...token, key: `${token.key.startsWith("primary.") ? normalizedPrimaryName : normalizedSecondaryName}.${token.key.split(".")[1]}` })),
+    };
+  }, [primary, secondary, method, relationship, primaryNameValid, secondaryNameValid, normalizedPrimaryName, normalizedSecondaryName, makePrimary]);
+
+  useEffect(() => { onChange(result); }, [result, onChange]);
 
   return (
-    <section className="space-y-4 rounded-lg border bg-background p-4" aria-labelledby={`${id}-title`}>
-      <div>
-        <h3 id={`${id}-title`} className="flex items-center gap-2 text-sm font-semibold"><Sparkles className="h-4 w-4" aria-hidden="true" /> Generate a palette</h3>
-        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Start with one color. Get 11 shades from 50 to 950, then refine them in the editor.</p>
+    <div className="space-y-4">
+      <div className="space-y-1.5">
+        <Label htmlFor="palette-method">Color method</Label>
+        <select id="palette-method" value={method} onChange={(event) => setMethod(event.target.value as PaletteMethod)} className="h-9 w-full rounded-md border bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <option value="oklch">OKLCH · perceptual (recommended)</option>
+          <option value="hsl">HSL · hue, saturation, lightness</option>
+          <option value="rgb">sRGB · tints and shades</option>
+        </select>
+        <p className="text-xs leading-relaxed text-muted-foreground">{methodNotes[method]}</p>
       </div>
-
-      <div className="space-y-2">
-        <Label htmlFor={`${id}-seed`} className="text-xs">Seed color · shade 500</Label>
-        <div className="flex items-center gap-2">
-          <Input type="color" aria-label="Choose palette seed color" value={normalizedSeed ?? "#6366f1"} onChange={(event) => { setSeed(event.target.value); setStatus(""); }} className="h-9 w-11 shrink-0 cursor-pointer p-1" />
-          <Input id={`${id}-seed`} value={seed} onChange={(event) => { setSeed(event.target.value); setStatus(""); }} className="min-w-0 flex-1 font-mono text-xs" spellCheck={false} maxLength={7} aria-invalid={!normalizedSeed} aria-describedby={!normalizedSeed ? `${id}-seed-error` : undefined} />
-          <Button type="button" variant="outline" size="icon" title="Generate a random seed color" aria-label="Generate a random seed color" onClick={() => { setSeed(randomPaletteSeed()); setStatus(""); }}><Shuffle className="h-4 w-4" /></Button>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="primary-hex">Primary color</Label>
+          <div className="flex gap-2">
+            <Input type="color" aria-label="Pick primary color" value={primaryValid ? normalizeHex(primary) : "#3b82f6"} onChange={(event) => setPrimary(event.target.value)} className="h-9 w-10 shrink-0 cursor-pointer p-1" />
+            <Input id="primary-hex" value={primary} onChange={(event) => setPrimary(event.target.value)} aria-invalid={!primaryValid} aria-describedby={!primaryValid ? "primary-error" : undefined} spellCheck={false} className="min-w-0 font-mono text-xs" />
+          </div>
+          {!primaryValid && <p id="primary-error" className="text-xs text-destructive">Use a 3 or 6 digit hex color.</p>}
         </div>
-        {!normalizedSeed && <p id={`${id}-seed-error`} className="text-xs text-destructive" role="alert">Enter a hex color, such as #6366f1 or #63f.</p>}
+        <div className="space-y-1.5">
+          <Label htmlFor="secondary-hex">Secondary color</Label>
+          <div className="flex gap-2">
+            <Input type="color" aria-label="Pick secondary color" value={isValidHex(displayedSecondary) ? normalizeHex(displayedSecondary) : "#8b5cf6"} onChange={(event) => { setRelationship("custom"); setSecondary(event.target.value); }} className="h-9 w-10 shrink-0 cursor-pointer p-1" />
+            <Input id="secondary-hex" value={displayedSecondary} onChange={(event) => { setRelationship("custom"); setSecondary(event.target.value); }} aria-invalid={relationship === "custom" && !secondaryValid} aria-describedby={relationship === "custom" && !secondaryValid ? "secondary-error" : undefined} spellCheck={false} className="min-w-0 font-mono text-xs" />
+          </div>
+          {relationship === "custom" && !secondaryValid && <p id="secondary-error" className="text-xs text-destructive">Use a 3 or 6 digit hex color.</p>}
+        </div>
       </div>
-
-      {palette && <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-11" aria-label="Generated palette preview">
-        {PALETTE_SHADES.map((shade) => <div key={shade} className="min-w-0 text-center" title={`${shade}: ${palette[shade]}`}>
-          <div className={`h-10 rounded border ${shade === "500" ? "ring-2 ring-foreground ring-offset-1" : ""}`} style={{ backgroundColor: palette[shade] }} />
-          <span className="mt-1 block text-[10px] text-muted-foreground">{shade}</span>
-        </div>)}
-      </div>}
-
-      <div className="space-y-2">
-        <Label htmlFor={`${id}-name`} className="text-xs">Palette name</Label>
-        <Input id={`${id}-name`} value={name} onChange={(event) => { setName(event.target.value); setStatus(""); }} className="text-xs" maxLength={40} placeholder="brand" spellCheck={false} aria-invalid={!validName} aria-describedby={`${id}-name-help`} />
-        <p id={`${id}-name-help`} className={`text-xs ${validName ? "text-muted-foreground" : "text-destructive"}`}>
-          {!validName ? "Start with a letter; use lowercase letters, numbers, or hyphens." : isExisting ? `Updates the existing ${normalizedName} palette. Other shades are preserved.` : `Adds color.${normalizedName}.50 through color.${normalizedName}.950.`}
-        </p>
+      <Button type="button" variant="outline" size="sm" onClick={() => setPrimary(randomPaletteSeed())}><Shuffle className="h-3.5 w-3.5" />Random primary seed</Button>
+      <div className="space-y-1.5">
+        <Label htmlFor="secondary-relationship">Secondary relationship</Label>
+        <select id="secondary-relationship" value={relationship} onChange={(event) => {
+          const next = event.target.value as SecondaryRelationship;
+          if (next === "custom") setSecondary(displayedSecondary);
+          setRelationship(next);
+        }} className="h-9 w-full rounded-md border bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <option value="custom">Custom · pick any secondary color</option>
+          <option value="complementary">Complementary · +180°</option>
+          <option value="analogous">Analogous · +30°</option>
+          <option value="triadic">Triadic partner · +120°</option>
+        </select>
+        <p className="text-xs leading-relaxed text-muted-foreground">Both colors stay exact at 500. Editing the secondary selects Custom.</p>
       </div>
-
-      <label className="flex cursor-pointer items-start gap-2 text-xs leading-relaxed" htmlFor={`${id}-primary`}>
-        <input id={`${id}-primary`} type="checkbox" className="mt-0.5 accent-primary" checked={makePrimary} onChange={(event) => { setMakePrimary(event.target.checked); setStatus(""); }} />
-        Use for primary color, focus rings, and buttons in light and dark mode
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="primary-name">Primary palette name</Label>
+          <Input id="primary-name" value={primaryName} onChange={(event) => setPrimaryName(event.target.value)} aria-invalid={!primaryNameValid} maxLength={40} spellCheck={false} className="text-xs" />
+          <p className={`text-xs ${primaryNameValid ? "text-muted-foreground" : "text-destructive"}`}>{!primaryNameValid ? "Start with a letter; use letters, numbers, or hyphens." : Object.hasOwn(colors, normalizedPrimaryName) ? `Updates ${normalizedPrimaryName}; custom shades are preserved.` : `Adds color.${normalizedPrimaryName}.50–950.`}</p>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="secondary-name">Secondary palette name</Label>
+          <Input id="secondary-name" value={secondaryName} onChange={(event) => setSecondaryName(event.target.value)} aria-invalid={!secondaryNameValid} maxLength={40} spellCheck={false} className="text-xs" />
+          <p className={`text-xs ${secondaryNameValid ? "text-muted-foreground" : "text-destructive"}`}>{!secondaryNameValid ? "Use a different valid palette name." : Object.hasOwn(colors, normalizedSecondaryName) ? `Updates ${normalizedSecondaryName}; custom shades are preserved.` : `Adds color.${normalizedSecondaryName}.50–950.`}</p>
+        </div>
+      </div>
+      <label htmlFor="palette-use-theme" className="flex cursor-pointer items-start gap-2 text-xs leading-relaxed">
+        <input id="palette-use-theme" type="checkbox" checked={makePrimary} onChange={(event) => setMakePrimary(event.target.checked)} className="mt-0.5 accent-primary" />
+        Use for theme primary and secondary colors, focus rings, and buttons in light and dark mode
       </label>
-      <Button type="button" className="w-full" size="sm" disabled={!palette || !validName} onClick={apply}><Check className="h-4 w-4" />Apply palette</Button>
-      <p role="status" aria-live="polite" className="empty:hidden text-xs leading-relaxed text-muted-foreground">{status}</p>
-    </section>
+    </div>
   );
 }

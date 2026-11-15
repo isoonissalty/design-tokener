@@ -4,13 +4,16 @@ import type { DesignTokenSettings } from "@/types/token-system";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, WandSparkles } from "lucide-react";
 import { TokenCategoryList, Category } from "./TokenCategoryList";
 import { TokenField } from "./TokenField";
 import { Label } from "@/components/ui/label";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateSettings } from "@/store/features/themeSlice";
-import { setActiveEditorTab, setSelectedEditorCategory } from "@/store/features/uiSlice";
+import { setActiveEditorTab, setSelectedEditorCategory, setActiveMainTab, setGeneratorCategory } from "@/store/features/uiSlice";
+
+import type { GenerationCategory } from "@/types/generation";
+import { GenerationDetails } from "./GenerationDetails";
 
 interface CollapsibleSectionProps {
   title: string;
@@ -156,8 +159,14 @@ export function GlobalTokenEditor() {
                       <ArrowLeft className="w-4 h-4" />
                   </Button>
                   <h3 className="font-bold capitalize">{selectedCategory.replace(/([A-Z])/g, ' $1').trim()}</h3>
+                  {activeTab === "foundation" && ["colors", "spacing", "radius", "sizing"].includes(selectedCategory) && (
+                    <Button variant="outline" size="sm" className="ml-auto" onClick={() => { dispatch(setGeneratorCategory(selectedCategory as GenerationCategory)); dispatch(setActiveMainTab("generate")); }}><WandSparkles className="h-3.5 w-3.5" />Generate</Button>
+                  )}
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto pr-2">
+                  {activeTab === "foundation" && tokens.generation?.[selectedCategory as GenerationCategory] && (
+                    <div className="mb-4"><GenerationDetails result={tokens.generation[selectedCategory as GenerationCategory]!} currentTokens={tokens} /></div>
+                  )}
                   {renderObjectFields(data, pathPrefix)}
               </div>
           </div>

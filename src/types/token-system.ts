@@ -1,3 +1,5 @@
+import type { GenerationCategory, GenerationResult } from "./generation";
+
 export type TokenValue = string;
 
 // --- 1. Foundation Tokens ---
@@ -76,6 +78,9 @@ export interface SemanticColors {
   };
   intent: {
     primary: SemanticColorValue;
+    secondary?: SemanticColorValue;
+    onPrimary?: SemanticColorValue;
+    onSecondary?: SemanticColorValue;
     success: SemanticColorValue;
     warning: SemanticColorValue;
     error: SemanticColorValue;
@@ -164,6 +169,7 @@ export interface DesignTokenSettings {
 
 export interface DesignTokenSystem {
   settings: DesignTokenSettings;
+  generation?: Partial<Record<GenerationCategory, GenerationResult>>;
   foundation: FoundationTokens;
   semantic: SemanticTokens;
   components: ComponentTokens;
