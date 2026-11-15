@@ -14,18 +14,23 @@ export function ThemeWrapper({ tokens, children, className }: ThemeWrapperProps)
 
   const { root: cssVarsRoot, dark: cssVarsDark } = generateTokenCss(tokens);
   const baseFontSize = tokens.settings?.baseFontSize || "16px";
+  const configuredRoot = /^(\d+(?:\.\d+)?)px$/.exec(baseFontSize.trim());
+  const rootPx = configuredRoot && Number(configuredRoot[1]) > 0 ? Number(configuredRoot[1]) : 16;
+  // A preview's font-size cannot change rem, which always uses the document
+  // root. Resolve token rem lengths here so editor dimensions stay isolated.
+  const previewValue = (value: string) => value.replace(/(-?(?:\d+\.?\d*|\.\d+))rem\b/g, (_, length: string) => `${Number(length) * rootPx}px`);
 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: `
         .preview-root {
-          font-size: ${baseFontSize};
+          font-size: ${rootPx}px;
         }
         .preview-root {
-          ${cssVarsRoot.join("\n")}
+          ${cssVarsRoot.map(previewValue).join("\n")}
         }
         .preview-root .dark {
-          ${cssVarsDark.join("\n")}
+          ${cssVarsDark.map(previewValue).join("\n")}
         }
 
         /* Map V1 Tokens to Shadcn/Tailwind Theme Variables */
@@ -40,10 +45,10 @@ export function ThemeWrapper({ tokens, children, className }: ThemeWrapperProps)
             --popover-foreground: var(--color-text-primary);
 
             --primary: var(--color-intent-primary);
-            --primary-foreground: var(--color-text-inverse);
+            --primary-foreground: var(--color-intent-on-primary, var(--color-text-inverse));
 
-            --secondary: var(--color-bg-subtle);
-            --secondary-foreground: var(--color-text-primary);
+            --secondary: var(--color-intent-secondary, var(--color-bg-subtle));
+            --secondary-foreground: var(--color-intent-on-secondary, var(--color-text-primary));
 
             --muted: var(--color-bg-subtle);
             --muted-foreground: var(--color-text-secondary);
@@ -73,10 +78,10 @@ export function ThemeWrapper({ tokens, children, className }: ThemeWrapperProps)
             --popover-foreground: var(--color-text-primary);
 
             --primary: var(--color-intent-primary);
-            --primary-foreground: var(--color-text-inverse);
+            --primary-foreground: var(--color-intent-on-primary, var(--color-text-inverse));
 
-            --secondary: var(--color-bg-subtle);
-            --secondary-foreground: var(--color-text-primary);
+            --secondary: var(--color-intent-secondary, var(--color-bg-subtle));
+            --secondary-foreground: var(--color-intent-on-secondary, var(--color-text-primary));
 
             --muted: var(--color-bg-subtle);
             --muted-foreground: var(--color-text-secondary);

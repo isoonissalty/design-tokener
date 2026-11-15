@@ -7,8 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DesignTokenSystem } from "@/types/token-system";
 import { TokenColorPicker } from "./TokenColorPicker";
 import { TokenReferenceSelector } from "./TokenReferenceSelector";
-import { useDebounce } from "@/hooks/use-debounce";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateToken } from "@/store/features/themeSlice";
 
 interface TokenFieldProps {
@@ -22,15 +21,18 @@ interface TokenFieldProps {
 
 export function TokenField({ label, value, onChange, path, tokens, typeHint }: TokenFieldProps) {
   const dispatch = useAppDispatch();
-  const [localValue, setLocalValue] = useState(value);
-  const debouncedValue = useDebounce(localValue, 500);
-  
-  // Track the last value we sent to parent to prevent the debounce from reverting immediate changes
-  const lastPropagatedValue = useRef(value);
+  const revision = useAppSelector((state) => state.theme.past.length);
+  const [draft, setDraft] = useState({ source: value, value, revision });
+  // Reset the draft during render when Undo, Load, or a generator changes it.
+  // Cancel the pending text commit below so it cannot overwrite that change.
+  if (draft.source !== value || draft.revision !== revision) setDraft({ source: value, value, revision });
+  const localValue = draft.source === value && draft.revision === revision ? draft.value : value;
+  const pendingCommit = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pathKey = JSON.stringify(path);
   
   // Use a ref to hold the latest path to avoid stale closures in memoized children
   const pathRef = useRef(path);
-  pathRef.current = path;
+  useEffect(() => { pathRef.current = path; }, [path]);
 
   // Stable update function that dispatches directly to Redux
   // Use pathRef.current to always get the latest path value
@@ -42,32 +44,22 @@ export function TokenField({ label, value, onChange, path, tokens, typeHint }: T
     }
   }, [dispatch, onChange]);
 
-  // Sync external changes to local state
-  useEffect(() => {
-    setLocalValue(value);
-    lastPropagatedValue.current = value;
-  }, [value]);
-
-  // Handle debounced updates for text input ONLY
-  // Only propagate if the debounced value differs from what we last sent
-  useEffect(() => {
-    if (debouncedValue !== lastPropagatedValue.current) {
-      lastPropagatedValue.current = debouncedValue;
-      dispatchUpdate(debouncedValue);
-    }
-  }, [debouncedValue, dispatchUpdate]);
+  useEffect(() => () => {
+    if (pendingCommit.current) clearTimeout(pendingCommit.current);
+  }, [value, pathKey, revision]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalValue(e.target.value);
+    const nextValue = e.target.value;
+    setDraft({ source: value, value: nextValue, revision });
+    if (pendingCommit.current) clearTimeout(pendingCommit.current);
+    if (nextValue !== value) pendingCommit.current = setTimeout(() => dispatchUpdate(nextValue), 500);
   };
 
   const handleImmediateChange = useCallback((newValue: string) => {
-    // For immediate changes (selects, color pickers), update immediately
-    // Also update the ref so debounce doesn't revert it
-    lastPropagatedValue.current = newValue;
-    setLocalValue(newValue);
-    dispatchUpdate(newValue);
-  }, [dispatchUpdate]);
+    if (pendingCommit.current) clearTimeout(pendingCommit.current);
+    setDraft({ source: value, value: newValue, revision });
+    if (newValue !== value) dispatchUpdate(newValue);
+  }, [dispatchUpdate, value, revision]);
 
 
   // Determine Type
@@ -79,7 +71,6 @@ export function TokenField({ label, value, onChange, path, tokens, typeHint }: T
 
   const isSpacing = path.some(p => p.toLowerCase().includes("spacing") || p.toLowerCase().includes("padding") || p.toLowerCase().includes("gap"));
   const isRadius = path.some(p => p.toLowerCase().includes("radius"));
-  const isSizing = path.some(p => p.toLowerCase().includes("size") || p.toLowerCase().includes("width") || p.toLowerCase().includes("height"));
   const isTypographySize = path.some(p => p.toLowerCase().includes("fontsize"));
   const isTypographyWeight = path.some(p => p.toLowerCase().includes("fontweight") || p.toLowerCase().includes("weight"));
   const isFontFamily = path.some(p => p.toLowerCase().includes("fontfamily"));
@@ -89,7 +80,7 @@ export function TokenField({ label, value, onChange, path, tokens, typeHint }: T
   // If we are editing Semantic/Component tokens, we want Reference Selectors.
   const isFoundation = path[0] === "foundation";
 
-  if (isFoundation) {
+  if (isFoundation || path[0] === "settings") {
       // Editing the source of truth
       if (isColor && !value.startsWith("{")) {
           return (

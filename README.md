@@ -1,4 +1,19 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Design Token Builder
+
+A token editor with light/dark previews and CSS/Tailwind export.
+
+## Generators
+
+Open **Generate** in the sidebar, or open a foundation category and select **Generate**. Preview the result, inspect **Why these values?**, then apply it. Each application is one Undo/Redo step and preserves other foundation tokens.
+
+- **Palette:** OKLCH, HSL, or encoded sRGB tint/shade ramps. Pick primary and secondary colors independently, or derive a secondary with a complementary, analogous, or triadic relationship. Both seeds remain exact at shade 500. The ramp weights and hue rotations are application recipes based on [W3C color models](https://www.w3.org/TR/css-color-4/) and [color harmony concepts](https://color.adobe.com/create/color-wheel).
+- **Spacing:** adjustable 4px or 8px grids, or the published [Carbon spacing scale](https://www.carbondesignsystem.com/building-blocks/foundations/spacing/overview).
+- **Radius:** adjustable [Tailwind v3](https://v3.tailwindcss.com/docs/border-radius) or [Material Web v0_192](https://github.com/material-components/material-web/blob/main/tokens/versions/v0_192/_md-sys-shape.scss) presets; zero and full rounding stay fixed.
+- **Sizing:** adjustable content widths based on [Tailwind v3 max-widths](https://v3.tailwindcss.com/docs/max-width), with an independent container width.
+
+Each token includes its calculation and linked sources. Dimension generators support px/rem output using the pixel root size in **Tokens → Settings**. Saved configurations preserve generation references; exported CSS includes them as comments. Manually edited values are identified separately from their original generated rationale.
+
+Run `npm test`, `npm run lint`, and `npx tsc --noEmit` for validation, and `npm run build` for the production build.
 
 ## Getting Started
 

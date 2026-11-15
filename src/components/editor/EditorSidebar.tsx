@@ -5,6 +5,8 @@ import { GlobalTokenEditor } from "@/components/editor/GlobalTokenEditor";
 import { ComponentManager } from "@/components/editor/ComponentManager";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setActiveMainTab } from "@/store/features/uiSlice";
+import { GeneratorPanel } from "@/components/editor/GeneratorPanel";
+import { WandSparkles } from "lucide-react";
 
 export function EditorSidebar() {
   const dispatch = useAppDispatch();
@@ -12,11 +14,12 @@ export function EditorSidebar() {
 
   return (
     <div className="flex flex-col h-full border-r bg-muted/10 min-w-[480px]">
-      <Tabs value={activeTab} onValueChange={(val) => dispatch(setActiveMainTab(val as 'tokens' | 'components'))} className="flex-1 flex flex-col min-h-0">
+      <Tabs value={activeTab} onValueChange={(val) => dispatch(setActiveMainTab(val as 'tokens' | 'components' | 'generate'))} className="flex-1 flex flex-col min-h-0">
         <div className="p-4 border-b shrink-0">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="tokens">Tokens</TabsTrigger>
             <TabsTrigger value="components">Components</TabsTrigger>
+            <TabsTrigger value="generate"><WandSparkles className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />Generate</TabsTrigger>
             </TabsList>
         </div>
 
@@ -27,6 +30,7 @@ export function EditorSidebar() {
             <TabsContent value="components" className="h-full mt-0">
                 <ComponentManager />
             </TabsContent>
+            <div hidden={activeTab !== 'generate'} className="h-full"><GeneratorPanel /></div>
         </div>
       </Tabs>
     </div>
