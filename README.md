@@ -16,6 +16,7 @@ Open http://localhost:3000. The editor and preview resize side by side on deskto
 ## Create and refine a theme
 
 - **Templates:** see the current theme, save it under a name, or apply one of eight complete starting themes. Your templates persist in this browser and include every token, both color modes, typography, spacing, and button styles. Editing or applying another theme keeps saved templates intact.
+- **Fonts:** open the top-level Fonts tab or the **Set up English & Thai fonts** shortcut in Tokens. Apply a recommended pairing in one click, or choose English and Thai fonts separately. Your first selection fills the other language with its recommended font. Changes apply immediately and are undoable. The **Typography · EN / TH** preview includes both scripts, mixed text, Thai marks, numbers, and an editable sample. Pairings update the sans-serif stack; custom serif/monospace roles retain their configured fonts. Catalog Google Fonts load automatically, with a visible fallback status when unavailable. Save the theme or a template to reuse your selections.
 - **Generate:** build color palettes, spacing, corner radius, and content sizing. Color generation supports OKLCH, HSL, or encoded sRGB, with independent primary and secondary colors, named palettes, and optional harmony relationships. Generator drafts stay in place when switching tabs.
 - **Tokens:** edit individual foundation and semantic values. After applying generated values, use **Edit applied tokens** to open the matching Foundation category. Generated color palettes appear expanded at the top of Colors. Use **Save as template** to name and save the full applied theme and its generation recipes in Templates.
 - **Components:** customize button colors, interaction states, radius, and padding. Other listed components inherit the global tokens.
@@ -52,6 +53,8 @@ Dimension generators support px/rem output using the root size in **Tokens → S
 The DESIGN.md export follows the Google DESIGN.md alpha format and its standard eight sections. It includes configured colors, typography, spacing, corner radii, and button states in YAML. Shadows, motion, sizing, borders, opacity, and layer order are documented in prose because the alpha schema has no fields for them. The document distinguishes observed values from proposed guidance and reports unresolved references. Product context and accessibility checks still need verification. Re-export after editing tokens to keep the contract current.
 
 CSS imports update supported matching variables and retain the other tokens. JSON is the format for lossless backups. Review import errors in the dialog; an invalid import leaves the current theme intact.
+
+Font selections travel with saved themes, templates, JSON, and CSS imports. CSS exports include the Google Fonts import and apply the body font; Tailwind v3 exports also map `font-en` and `font-th`. DESIGN.md includes the loading URL and language guidance. Keep English first, Thai second, and generic fallback last in the mixed-language stack. Imported custom font names need their own font files or loading setup.
 
 ## Verification
 

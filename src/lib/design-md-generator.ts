@@ -1,4 +1,5 @@
 import type { DesignTokenSystem, SemanticColorValue } from "@/types/token-system";
+import { getFontStylesheetUrl } from "./font-options";
 
 type YamlTree = { [key: string]: string | YamlTree };
 type Mode = "light" | "dark";
@@ -183,6 +184,13 @@ export function generateDesignMarkdown(tokens: DesignTokenSystem): string {
     Object.entries(values).map(([key, value]) => [code(`${group}.${key}`), display(value)]),
   ));
   const families = table(["Font family token", "Stack"], Object.entries(foundation.typography.family).map(([key, value]) => [code(key), display(value)]));
+  const fontStylesheet = getFontStylesheetUrl(tokens);
+  const bilingualFonts = foundation.typography.family.en && foundation.typography.family.th
+    ? `English font: ${display(foundation.typography.family.en)}. Thai font: ${display(foundation.typography.family.th)}. Use the configured sans stack for mixed text, placing the English font first, the Thai font second, and a generic fallback last. Custom heading families retain their configured stack. Verify Thai combining marks, line height, and mixed Thai/English text in the consuming application.`
+    : "";
+  const fontLoading = fontStylesheet
+    ? `Load the configured Google Fonts stylesheet before displaying the theme: [Font stylesheet](${fontStylesheet}). The CSS exports include this import with regular (400), medium (500), and bold (700) weights and font-display: swap. JSON and this document preserve the configuration; the consuming application must load the stylesheet or self-host equivalent font files. Custom and system fonts need their own installation or loading setup.`
+    : "Custom and system font families require their own installation or loading setup. No catalog webfont stylesheet is configured.";
   const buttonPadding = `Horizontal padding: ${display(button.padding.x)}. Vertical padding: ${display(button.padding.y)}.`;
   const baseFontSize = display(tokens.settings?.baseFontSize ?? "16px");
 
@@ -232,6 +240,10 @@ Configured base font size: ${baseFontSize} (the editor fallback is 16px when set
 
 ${families}
 
+### Font loading and languages
+
+${fontLoading}
+${bilingualFonts ? `\n${bilingualFonts}\n` : ""}
 ### Proposed typography checks
 
 Use logical heading order, allow text enlargement and wrapping, and verify glyph coverage for each supported language. Font availability, licensing, loading behavior, and multilingual coverage have not been verified. Avoid fixed-height text containers that clip translated or enlarged content.

@@ -14,6 +14,7 @@ import { setActiveEditorTab, setSelectedEditorCategory, setActiveMainTab, setGen
 
 import type { GenerationCategory } from "@/types/generation";
 import { GenerationDetails } from "./GenerationDetails";
+import { FontSetupShortcut } from "./FontSetup";
 
 interface CollapsibleSectionProps {
   title: string;
@@ -133,7 +134,7 @@ export function GlobalTokenEditor() {
 
   const foundationCategories: Category[] = [
       { id: "colors", name: "Colors", description: "Global color palette" },
-      { id: "typography", name: "Typography", description: "Fonts, sizes, weights" },
+      { id: "typography", name: "Typography", description: "English & Thai fonts, sizes, weights" },
       { id: "spacing", name: "Spacing", description: "Margins, paddings, gaps" },
       { id: "sizing", name: "Sizing", description: "Widths, heights, container sizes" },
       { id: "radius", name: "Radius", description: "Border radius values" },
@@ -177,6 +178,7 @@ export function GlobalTokenEditor() {
                   )}
               </div>
               <div className="flex-1 min-h-0 overflow-y-auto pr-2">
+                  {activeTab === "foundation" && selectedCategory === "typography" && <div className="mb-4"><FontSetupShortcut /></div>}
                   {activeTab === "foundation" && tokens.generation?.[selectedCategory as GenerationCategory] && (
                     <div className="mb-4"><GenerationDetails result={tokens.generation[selectedCategory as GenerationCategory]!} currentTokens={tokens} /></div>
                   )}
@@ -216,7 +218,10 @@ export function GlobalTokenEditor() {
 
               <TabsContent value="foundation" className="h-full mt-0">
                    {selectedCategory ? renderEditor() : (
-                       <TokenCategoryList categories={foundationCategories} onSelect={(id) => dispatch(setSelectedEditorCategory(id))} />
+                       <div className="flex h-full min-h-0 flex-col gap-4">
+                         <FontSetupShortcut />
+                         <div className="min-h-0 flex-1"><TokenCategoryList categories={foundationCategories} onSelect={(id) => dispatch(setSelectedEditorCategory(id))} /></div>
+                       </div>
                    )}
               </TabsContent>
 

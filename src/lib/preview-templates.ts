@@ -7,6 +7,7 @@ export const previewTemplates = {
   components: { label: "Component gallery", brand: "Component library" },
   storefront: { label: "Storefront", brand: "Everyday objects" },
   article: { label: "Article / documentation", brand: "Field notes" },
+  fonts: { label: "Typography · EN / TH", brand: "Type specimen" },
 } as const;
 
 export type PreviewTemplateId = keyof typeof previewTemplates;

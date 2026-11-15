@@ -4,8 +4,9 @@ import { createSavedTemplate, getTemplateSwatches, parseSavedTemplates, SAVED_TE
 import { applyGeneratedPalette, generatePalette } from '../src/lib/palette-generator.ts';
 import { generateRadius, generateSizing, generateSpacing } from '../src/lib/scale-generators.ts';
 import { defaultDesignTokens } from '../src/lib/token-defaults.ts';
+import { getFontStylesheetUrl } from '../src/lib/font-options.ts';
 import { makeStore } from '../src/store/store.ts';
-import { applyGeneration, redo, setTokens, undo } from '../src/store/features/themeSlice.ts';
+import { applyFontSetup, applyGeneration, redo, setTokens, undo } from '../src/store/features/themeSlice.ts';
 import { hydrateSavedTemplates, saveThemeTemplate } from '../src/store/features/templatesSlice.ts';
 
 function storageFor(t, initial = null) {
@@ -67,6 +68,38 @@ test('saving, reloading, and applying restore both generated modes and retain un
   assert.deepEqual(reloaded.getState().theme.present, generated);
   reloaded.dispatch(undo());
   assert.deepEqual(reloaded.getState().theme.present, defaultDesignTokens);
+});
+
+test('saved font setup restores both languages and their webfont loading after hydration', t => {
+  storageFor(t);
+  const store = makeStore();
+  store.dispatch(applyFontSetup({ en: '"Lato"', th: '"Prompt"' }));
+  const configured = store.getState().theme.present;
+  const configuredUrl = getFontStylesheetUrl(configured);
+  assert.match(configuredUrl, /family=Lato:wght@400;500;700/);
+  assert.match(configuredUrl, /family=Prompt:wght@400;500;700/);
+  const result = store.dispatch(saveThemeTemplate({ name: 'Bilingual type', tokens: configured }));
+  assert.equal(result.ok, true);
+
+  const reloaded = makeStore();
+  reloaded.dispatch(hydrateSavedTemplates());
+  const saved = reloaded.getState().templates.items[0];
+  assert.equal(saved.name, 'Bilingual type');
+  assert.deepEqual(saved.tokens, configured);
+  assert.equal(getFontStylesheetUrl(saved.tokens), configuredUrl);
+  reloaded.dispatch(setTokens(structuredClone(saved.tokens)));
+  assert.deepEqual(reloaded.getState().theme.present.foundation.typography.family, {
+    ...defaultDesignTokens.foundation.typography.family,
+    en: '"Lato"',
+    th: '"Prompt"',
+    sans: '{font.family.en}, {font.family.th}, sans-serif',
+  });
+  assert.equal(getFontStylesheetUrl(reloaded.getState().theme.present), configuredUrl);
+  reloaded.dispatch(undo());
+  assert.equal(getFontStylesheetUrl(reloaded.getState().theme.present), undefined);
+  reloaded.dispatch(redo());
+  assert.equal(getFontStylesheetUrl(reloaded.getState().theme.present), configuredUrl);
+  assert.deepEqual(reloaded.getState().templates.items[0], saved);
 });
 
 test('foundation-only palettes stay visible in saved-template swatches after reload', t => {

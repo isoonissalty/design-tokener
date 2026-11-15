@@ -98,3 +98,40 @@ test('wrapped HSL channel variables are normalized once', () => {
   const theme = importTheme(':root { --brand-channels: 262 83% 58%; --primary: hsl(var(--brand-channels)); }', copy()).tokens;
   assert.equal(theme.semantic.colors.intent.primary.light, 'hsl(262 83% 58%)');
 });
+
+test('English and Thai font setup survives JSON and both CSS exports with editable aliases', () => {
+  const theme = copy();
+  Object.assign(theme.foundation.typography.family, {
+    en: '"Inter"',
+    th: '"Noto Sans Thai"',
+    sans: '{font.family.en}, {font.family.th}, sans-serif',
+  });
+  const before = structuredClone(theme);
+  assert.deepEqual(importTheme(exportThemeJson(theme), copy()).tokens, theme);
+  for (const version of [3, 4]) {
+    const css = exportThemeCss(theme, version);
+    assert.match(css, /@import url\("https:\/\/fonts\.googleapis\.com\/css2\?/);
+    assert.match(css, /family=Inter/);
+    assert.match(css, /family=Noto\+Sans\+Thai/);
+    assert.ok(css.indexOf('@import url(') < css.indexOf(':root {'), 'font import precedes style rules');
+    if (version === 4) {
+      assert.ok(css.indexOf('@import url(') < css.indexOf('@import "tailwindcss";'), 'font import stays first when Tailwind is inlined');
+      assert.ok(css.indexOf('@import url(') < css.indexOf('@custom-variant'));
+    }
+    assert.match(css, /body \{ font-family: var\(--dt-text-body-base-font-family\); \}/);
+    assert.match(css, /--dt-font-family-sans: var\(--dt-font-family-en\), var\(--dt-font-family-th\), sans-serif;/);
+    assert.deepEqual(importTheme(css, copy()).tokens, theme, `Tailwind ${version} preserves separately editable language fonts`);
+  }
+  const config = JSON.parse(exportTailwindConfig(theme).split('module.exports = ')[1].replace(/;\s*$/, ''));
+  assert.equal(config.theme.extend.fontFamily.en, 'var(--dt-font-family-en)');
+  assert.equal(config.theme.extend.fontFamily.th, 'var(--dt-font-family-th)');
+  assert.deepEqual(theme, before);
+});
+
+test('legacy themes need no language fonts and optional language families must be strings', () => {
+  const theme = copy();
+  assert.deepEqual(validateTheme(theme), theme);
+  assert.doesNotMatch(exportThemeCss(theme), /fonts\.googleapis\.com/);
+  theme.foundation.typography.family.th = { family: '"Prompt"' };
+  assert.throws(() => validateTheme(theme), /foundation\.typography\.family\.th must be a nonempty string/);
+});
