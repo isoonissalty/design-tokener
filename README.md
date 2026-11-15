@@ -34,6 +34,9 @@ Template, palette, import, reset, and saved-theme restoration are undoable. Undo
 | Tailwind CSS v4 | Use `theme.css` as your Tailwind stylesheet. It includes the Tailwind import, utility mappings, and dark variant. |
 | Tailwind CSS v3 | Download both `theme.css` and `tailwind.config.cjs`. Import the CSS alongside your Tailwind directives and use the config's theme mappings. |
 | JSON | Includes every token and both modes for exact restoration and further editing. |
+| DESIGN.md | A self-contained design contract with the current tokens, both color modes, and usage guidance. Preview, copy, or download it for your project. |
+
+The DESIGN.md export follows the Google DESIGN.md alpha format and its standard eight sections. It includes configured colors, typography, spacing, corner radii, and button states in YAML. Shadows, motion, sizing, borders, opacity, and layer order are documented in prose because the alpha schema has no fields for them. The document distinguishes observed values from proposed guidance and reports unresolved references. Product context and accessibility checks still need verification. Re-export after editing tokens to keep the contract current.
 
 CSS imports update supported matching variables and retain the other tokens. JSON is the format for lossless backups. Review import errors in the dialog; an invalid import leaves the current theme intact.
 
@@ -46,7 +49,7 @@ npm run lint
 npm run build
 ```
 
-The Node test suite covers token reference generation, color preservation, palette/contrast behavior, immutable templates, import/export, and undo/redo history. Production startup uses `npm start`. The build fetches Geist fonts through Next.js.
+The Node test suite covers token reference generation, color preservation, palette/contrast behavior, immutable templates, import/export (including DESIGN.md structure and alias resolution), and undo/redo history. Production startup uses `npm start`. The build fetches Geist fonts through Next.js.
 
 ## Dependency security
 
