@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { ThemeWrapper } from "@/components/ThemeWrapper";
 import { PreviewContent } from "@/components/preview/PreviewContent";
+import { previewTemplates } from "@/lib/preview-templates";
 
 function subscribeToViewport(callback: () => void) {
   const media = window.matchMedia("(min-width: 1024px)");
@@ -36,7 +37,7 @@ function FullScreenPreview() {
     <dialog ref={dialogRef} aria-labelledby="fullscreen-preview-title" onCancel={() => dispatch(setPreviewOpen(false))} className="fixed inset-0 m-auto h-[calc(100dvh-2rem)] max-h-none w-[calc(100%-2rem)] max-w-none overflow-hidden rounded-xl border bg-background p-0 text-foreground shadow-2xl backdrop:bg-black/60">
       <div className="flex h-full flex-col">
         <div className="flex shrink-0 items-center justify-between gap-3 border-b bg-background px-4 py-3">
-          <h2 id="fullscreen-preview-title" className="text-sm font-semibold capitalize">{template === "landing" ? "Landing page" : template} preview</h2>
+          <h2 id="fullscreen-preview-title" className="text-sm font-semibold">{previewTemplates[template].label} preview</h2>
           <Button variant="ghost" size="icon" onClick={() => dispatch(setPreviewOpen(false))} aria-label="Close preview"><X /></Button>
         </div>
         <div className="flex-1 min-h-0 overflow-auto">

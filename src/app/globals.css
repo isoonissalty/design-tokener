@@ -2,6 +2,66 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Preview layouts follow the resizable pane, independently of the editor. */
+.preview-toolbar {
+  container: preview-toolbar / inline-size;
+}
+
+.preview-toolbar-label {
+  display: none;
+}
+
+@container preview-toolbar (min-width: 32rem) {
+  .preview-toolbar-label {
+    display: inline;
+  }
+}
+
+.preview-container {
+  container: theme-preview / inline-size;
+  overflow-wrap: anywhere;
+}
+
+.preview-page {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding: var(--space-4);
+}
+
+.preview-grid-two,
+.preview-grid-three {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.preview-grid-two > *,
+.preview-grid-three > * {
+  min-width: 0;
+}
+
+.preview-container [data-variant]:not([data-size="icon"]) {
+  max-width: 100%;
+  white-space: normal;
+}
+
+@container theme-preview (min-width: 40rem) {
+  .preview-page {
+    padding: var(--space-8);
+  }
+
+  .preview-grid-two,
+  .preview-grid-three {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container theme-preview (min-width: 56rem) {
+  .preview-grid-three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 
 
 @layer base {

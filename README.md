@@ -1,6 +1,6 @@
 # Design Token Builder
 
-Build a Tailwind theme from editable foundation, semantic, and component tokens. Preview the result in light and dark mode across landing page, dashboard, and pricing layouts.
+Build a Tailwind theme from editable foundation, semantic, and component tokens. Preview the result in light and dark mode across seven interactive example layouts.
 
 ## Run locally
 
@@ -19,7 +19,9 @@ Open http://localhost:3000. The editor and preview resize side by side on deskto
 - **Generate:** build color palettes, spacing, corner radius, and content sizing. Color generation supports OKLCH, HSL, or encoded sRGB, with independent primary and secondary colors, named palettes, and optional harmony relationships. Generator drafts stay in place when switching tabs.
 - **Tokens:** edit individual foundation and semantic values. After applying generated values, use **Edit applied tokens** to open the matching Foundation category. Generated color palettes appear expanded at the top of Colors. Use **Save as template** to name and save the full applied theme and its generation recipes in Templates.
 - **Components:** customize button colors, interaction states, radius, and padding. Other listed components inherit the global tokens.
-- **Preview:** select a layout, toggle light/dark mode, or open the full screen preview. Dashboard and pricing controls can be tried interactively.
+- **Preview:** choose Landing page, Dashboard, Pricing page, Settings & forms, Component gallery, Storefront, or Article / documentation. Toggle light/dark mode or open the selected layout in full screen. Example layouts adapt to the preview pane width.
+
+Try form validation and preferences in Settings, inspect control and status styles in the gallery, filter products and adjust cart quantities in Storefront, or explore typography and code in the article. Sample interactions stay in the preview and reset when switching layouts or opening full screen; they do not change your theme or submit data.
 
 Template, palette, import, reset, and saved-theme restoration are undoable. Undo/redo retains up to 100 changes. Ctrl/⌘ Z and Ctrl/⌘ Shift Z work outside text inputs. Save and restore use this browser's local storage; use JSON export to keep a portable copy.
 
