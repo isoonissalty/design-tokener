@@ -11,47 +11,54 @@ const config: Config = {
   theme: {
 	extend: {
 		colors: {
-			background: 'hsl(var(--background))',
-			foreground: 'hsl(var(--foreground))',
+			background: 'color-mix(in srgb, var(--background) calc(<alpha-value> * 100%), transparent)',
+			foreground: 'color-mix(in srgb, var(--foreground) calc(<alpha-value> * 100%), transparent)',
 			card: {
-				DEFAULT: 'hsl(var(--card))',
-				foreground: 'hsl(var(--card-foreground))'
+				DEFAULT: 'color-mix(in srgb, var(--card) calc(<alpha-value> * 100%), transparent)',
+				foreground: 'color-mix(in srgb, var(--card-foreground) calc(<alpha-value> * 100%), transparent)'
 			},
 			popover: {
-				DEFAULT: 'hsl(var(--popover))',
-				foreground: 'hsl(var(--popover-foreground))'
+				DEFAULT: 'color-mix(in srgb, var(--popover) calc(<alpha-value> * 100%), transparent)',
+				foreground: 'color-mix(in srgb, var(--popover-foreground) calc(<alpha-value> * 100%), transparent)'
 			},
 			primary: {
-				DEFAULT: 'hsl(var(--primary))',
-				foreground: 'hsl(var(--primary-foreground))'
+				DEFAULT: 'color-mix(in srgb, var(--primary) calc(<alpha-value> * 100%), transparent)',
+				foreground: 'color-mix(in srgb, var(--primary-foreground) calc(<alpha-value> * 100%), transparent)'
 			},
 			secondary: {
-				DEFAULT: 'hsl(var(--secondary))',
-				foreground: 'hsl(var(--secondary-foreground))'
+				DEFAULT: 'color-mix(in srgb, var(--secondary) calc(<alpha-value> * 100%), transparent)',
+				foreground: 'color-mix(in srgb, var(--secondary-foreground) calc(<alpha-value> * 100%), transparent)'
 			},
 			muted: {
-				DEFAULT: 'hsl(var(--muted))',
-				foreground: 'hsl(var(--muted-foreground))'
+				DEFAULT: 'color-mix(in srgb, var(--muted) calc(<alpha-value> * 100%), transparent)',
+				foreground: 'color-mix(in srgb, var(--muted-foreground) calc(<alpha-value> * 100%), transparent)'
 			},
 			accent: {
-				DEFAULT: 'hsl(var(--accent))',
-				foreground: 'hsl(var(--accent-foreground))'
+				DEFAULT: 'color-mix(in srgb, var(--accent) calc(<alpha-value> * 100%), transparent)',
+				foreground: 'color-mix(in srgb, var(--accent-foreground) calc(<alpha-value> * 100%), transparent)'
 			},
 			destructive: {
-				DEFAULT: 'hsl(var(--destructive))',
-				foreground: 'hsl(var(--destructive-foreground))'
+				DEFAULT: 'color-mix(in srgb, var(--destructive) calc(<alpha-value> * 100%), transparent)',
+				foreground: 'color-mix(in srgb, var(--destructive-foreground) calc(<alpha-value> * 100%), transparent)'
 			},
-			border: 'hsl(var(--border))',
-			input: 'hsl(var(--input))',
-			ring: 'hsl(var(--ring))',
+			border: 'color-mix(in srgb, var(--border) calc(<alpha-value> * 100%), transparent)',
+			input: 'color-mix(in srgb, var(--input) calc(<alpha-value> * 100%), transparent)',
+			ring: 'color-mix(in srgb, var(--ring) calc(<alpha-value> * 100%), transparent)',
 			chart: {
-				'1': 'hsl(var(--chart-1))',
-				'2': 'hsl(var(--chart-2))',
-				'3': 'hsl(var(--chart-3))',
-				'4': 'hsl(var(--chart-4))',
-				'5': 'hsl(var(--chart-5))'
+				'1': 'color-mix(in srgb, var(--chart-1) calc(<alpha-value> * 100%), transparent)',
+				'2': 'color-mix(in srgb, var(--chart-2) calc(<alpha-value> * 100%), transparent)',
+				'3': 'color-mix(in srgb, var(--chart-3) calc(<alpha-value> * 100%), transparent)',
+				'4': 'color-mix(in srgb, var(--chart-4) calc(<alpha-value> * 100%), transparent)',
+				'5': 'color-mix(in srgb, var(--chart-5) calc(<alpha-value> * 100%), transparent)'
 			}
 		},
+        boxShadow: {
+            none: 'var(--shadow-none, 0 0 #0000)',
+            sm: 'var(--shadow-sm, 0 1px 2px 0 rgb(0 0 0 / 0.05))',
+            DEFAULT: 'var(--shadow-md, 0 1px 3px 0 rgb(0 0 0 / 0.1))',
+            md: 'var(--shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1))',
+            lg: 'var(--shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 0.1))',
+        },
         spacing: {
             '0': 'var(--space-0)',
             '1': 'var(--space-1)',

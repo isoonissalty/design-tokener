@@ -1,81 +1,74 @@
-import { createSlice, PayloadAction, current } from '@reduxjs/toolkit';
-import { DesignTokenSystem } from '@/types/token-system';
+import { createSlice, current, type PayloadAction } from '@reduxjs/toolkit';
+import type { DesignTokenSettings, DesignTokenSystem } from '@/types/token-system';
 import { defaultDesignTokens } from '@/lib/token-defaults';
 
-interface ThemeState {
+export interface ThemeState {
   past: DesignTokenSystem[];
   present: DesignTokenSystem;
   future: DesignTokenSystem[];
 }
 
-const initialState: ThemeState = {
-  past: [],
-  present: defaultDesignTokens,
-  future: [],
-};
+export const HISTORY_LIMIT = 100;
+const blockedKeys = new Set(['__proto__', 'prototype', 'constructor']);
+const initialState: ThemeState = { past: [], present: defaultDesignTokens, future: [] };
+
+function remember(state: ThemeState) {
+  state.past.push(current(state.present));
+  if (state.past.length > HISTORY_LIMIT) state.past.shift();
+  state.future = [];
+}
+
+function replaceTokens(state: ThemeState, tokens: DesignTokenSystem) {
+  if (JSON.stringify(state.present) === JSON.stringify(tokens)) return;
+  remember(state);
+  state.present = tokens;
+}
 
 export const themeSlice = createSlice({
   name: 'theme',
   initialState,
   reducers: {
-    setTokens: (state, action: PayloadAction<DesignTokenSystem>) => {
-      state.past.push(state.present);
-      state.present = action.payload;
-      state.future = [];
-    },
+    setTokens: (state, action: PayloadAction<DesignTokenSystem>) => replaceTokens(state, action.payload),
     updateToken: (state, action: PayloadAction<{ path: string[]; value: string }>) => {
-        const { path, value } = action.payload;
-
-        // Push current state snapshot to history before mutation
-        // Using current() instead of JSON.parse(JSON.stringify()) for performance
-        state.past.push(current(state.present));
-        state.future = [];
-
-        let currentDraft: any = state.present;
-        for (let i = 0; i < path.length - 1; i++) {
-            currentDraft = currentDraft[path[i]];
-        }
-        currentDraft[path[path.length - 1]] = value;
+      const { path, value } = action.payload;
+      if (!path.length || path.some(key => blockedKeys.has(key))) return;
+      let target: unknown = state.present;
+      for (const key of path.slice(0, -1)) {
+        if (!target || typeof target !== 'object' || !Object.hasOwn(target, key)) return;
+        target = (target as Record<string, unknown>)[key];
+      }
+      const key = path[path.length - 1];
+      if (!target || typeof target !== 'object' || !Object.hasOwn(target, key)) return;
+      const record = target as Record<string, unknown>;
+      // Individual field edits may change string leaves only; templates and imports
+      // replace the full validated system through setTokens/load.
+      if (typeof record[key] !== 'string' || record[key] === value) return;
+      remember(state);
+      record[key] = value;
     },
-    updateSettings: (state, action: PayloadAction<{ key: string; value: string }>) => {
-        // Push current state snapshot to history before mutation
-        state.past.push(current(state.present));
-        state.future = [];
-
-        if (!state.present.settings) {
-            state.present.settings = { baseFontSize: "16px" };
-        }
-        (state.present.settings as any)[action.payload.key] = action.payload.value;
+    updateSettings: (state, action: PayloadAction<{ key: keyof DesignTokenSettings; value: string }>) => {
+      const { key, value } = action.payload;
+      if (key !== 'baseFontSize' || state.present.settings.baseFontSize === value) return;
+      remember(state);
+      state.present.settings[key] = value;
     },
     undo: (state) => {
-      if (state.past.length === 0) return;
       const previous = state.past.pop();
-      if (previous) {
-        state.future.unshift(state.present);
-        state.present = previous;
-      }
+      if (!previous) return;
+      state.future.unshift(state.present);
+      state.present = previous;
     },
     redo: (state) => {
-      if (state.future.length === 0) return;
       const next = state.future.shift();
-      if (next) {
-        state.past.push(state.present);
-        state.present = next;
-      }
-    },
-    reset: (state) => {
+      if (!next) return;
       state.past.push(state.present);
-      state.present = defaultDesignTokens;
-      state.future = [];
+      if (state.past.length > HISTORY_LIMIT) state.past.shift();
+      state.present = next;
     },
-    load: (state, action: PayloadAction<DesignTokenSystem>) => {
-      state.past.push(state.present);
-      state.present = action.payload;
-      state.future = [];
-    }
+    reset: (state) => replaceTokens(state, defaultDesignTokens),
+    load: (state, action: PayloadAction<DesignTokenSystem>) => replaceTokens(state, action.payload),
   },
 });
 
 export const { setTokens, updateToken, updateSettings, undo, redo, reset, load } = themeSlice.actions;
-
 export default themeSlice.reducer;

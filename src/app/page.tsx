@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { Header } from "@/components/layout/Header";
 import { EditorSidebar } from "@/components/editor/EditorSidebar";
 import { LivePreview } from "@/components/preview/LivePreview";
@@ -9,56 +10,64 @@ import { setPreviewOpen, togglePreviewTheme } from "@/store/features/uiSlice";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { ThemeWrapper } from "@/components/ThemeWrapper";
-import { LandingPage } from "@/components/landing-page/LandingPage";
+import { PreviewContent } from "@/components/preview/PreviewContent";
+
+function subscribeToViewport(callback: () => void) {
+  const media = window.matchMedia("(min-width: 1024px)");
+  media.addEventListener("change", callback);
+  return () => media.removeEventListener("change", callback);
+}
+const getWideViewport = () => window.matchMedia("(min-width: 1024px)").matches;
+
+function FullScreenPreview() {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const dispatch = useAppDispatch();
+  const tokens = useAppSelector(state => state.theme.present);
+  const isDark = useAppSelector(state => state.ui.isPreviewDark);
+  const template = useAppSelector(state => state.ui.previewTemplate);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    dialog?.showModal();
+    return () => dialog?.close();
+  }, []);
+
+  return (
+    <dialog ref={dialogRef} aria-labelledby="fullscreen-preview-title" onCancel={() => dispatch(setPreviewOpen(false))} className="fixed inset-0 m-auto h-[calc(100dvh-2rem)] max-h-none w-[calc(100%-2rem)] max-w-none overflow-hidden rounded-xl border bg-background p-0 text-foreground shadow-2xl backdrop:bg-black/60">
+      <div className="flex h-full flex-col">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b bg-background px-4 py-3">
+          <h2 id="fullscreen-preview-title" className="text-sm font-semibold capitalize">{template === "landing" ? "Landing page" : template} preview</h2>
+          <Button variant="ghost" size="icon" onClick={() => dispatch(setPreviewOpen(false))} aria-label="Close preview"><X /></Button>
+        </div>
+        <div className="flex-1 min-h-0 overflow-auto">
+          <ThemeWrapper tokens={tokens} className="min-h-full">
+            <PreviewContent template={template} isDark={isDark} toggleTheme={() => dispatch(togglePreviewTheme())} />
+          </ThemeWrapper>
+        </div>
+      </div>
+    </dialog>
+  );
+}
 
 export default function Home() {
-    const isPreviewOpen = useAppSelector(state => state.ui.isPreviewOpen);
-    const isPreviewDark = useAppSelector(state => state.ui.isPreviewDark);
-    const tokens = useAppSelector(state => state.theme.present);
-    const dispatch = useAppDispatch();
+  const isPreviewOpen = useAppSelector(state => state.ui.isPreviewOpen);
+  const isWide = useSyncExternalStore(subscribeToViewport, getWideViewport, () => true);
 
-    return (
-        <main className="h-screen flex flex-col bg-background text-foreground font-sans overflow-hidden">
-            <Header />
-
-            <div className="flex-1 flex overflow-hidden">
-                 <Group orientation="horizontal">
-                    <Panel defaultSize={25} minSize={20} className="min-w-[480px]">
-                        <EditorSidebar />
-                    </Panel>
-
-                    <Separator className="w-1 bg-border hover:bg-primary transition-colors cursor-col-resize" />
-
-                    <Panel defaultSize={50}>
-                        <LivePreview />
-                    </Panel>
-                </Group>
-            </div>
-
-             {/* Full Screen Overlay Preview */}
-            {isPreviewOpen && (
-                <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-200">
-                    <div className="bg-white w-full h-full rounded-lg shadow-2xl overflow-hidden relative flex flex-col">
-                        <div className="bg-slate-900 text-white p-4 flex justify-between items-center shrink-0">
-                            <span className="font-semibold">Landing Page Preview</span>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => dispatch(setPreviewOpen(false))}
-                                className="hover:bg-white/10 text-white"
-                                aria-label="Close preview"
-                            >
-                                <X className="w-5 h-5" />
-                            </Button>
-                        </div>
-                        <div className="flex-1 overflow-auto bg-gray-50">
-                            <ThemeWrapper tokens={tokens} className="min-h-full preview-root">
-                               <LandingPage isDark={isPreviewDark} toggleTheme={() => dispatch(togglePreviewTheme())} />
-                            </ThemeWrapper>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </main>
-    );
+  return (
+    <main className="h-dvh flex flex-col bg-background text-foreground font-sans overflow-hidden">
+      <Header />
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <Group key={isWide ? "wide" : "narrow"} orientation={isWide ? "horizontal" : "vertical"} className="h-full">
+          <Panel defaultSize={isWide ? "38%" : "55%"} minSize={isWide ? "360px" : "25%"} maxSize={isWide ? "65%" : "75%"}>
+            <EditorSidebar />
+          </Panel>
+          <Separator className={isWide ? "w-1 bg-border hover:bg-primary transition-colors cursor-col-resize" : "h-1 bg-border hover:bg-primary transition-colors cursor-row-resize"} />
+          <Panel minSize="25%">
+            <LivePreview />
+          </Panel>
+        </Group>
+      </div>
+      {isPreviewOpen && <FullScreenPreview />}
+    </main>
+  );
 }

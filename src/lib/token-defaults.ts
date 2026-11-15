@@ -1,4 +1,4 @@
-import { DesignTokenSystem } from "@/types/token-system";
+import type { DesignTokenSystem } from "@/types/token-system";
 
 export const defaultDesignTokens: DesignTokenSystem = {
   settings: {
@@ -388,21 +388,21 @@ export const defaultDesignTokens: DesignTokenSystem = {
       heading: {
         h1: {
           fontFamily: "{font.family.sans}",
-          fontSize: "{font.size.xl}",
+          fontSize: "3.75rem",
           fontWeight: "{font.weight.bold}",
           lineHeight: "{line.height.tight}",
           letterSpacing: "{letter.spacing.tight}",
         },
         h2: {
           fontFamily: "{font.family.sans}",
-          fontSize: "{font.size.lg}",
+          fontSize: "2.25rem",
           fontWeight: "{font.weight.bold}",
           lineHeight: "{line.height.tight}",
           letterSpacing: "{letter.spacing.tight}",
         },
         h3: {
           fontFamily: "{font.family.sans}",
-          fontSize: "{font.size.base}",
+          fontSize: "1.25rem",
           fontWeight: "{font.weight.bold}",
           lineHeight: "{line.height.tight}",
           letterSpacing: "{letter.spacing.normal}",
@@ -475,7 +475,7 @@ export const defaultDesignTokens: DesignTokenSystem = {
   components: {
     button: {
       bg: {
-        default: { light: "{color.intent.primary.light}", dark: "{color.intent.primary.dark}" },
+        default: { light: "{color.intent.primary}", dark: "{color.intent.primary}" },
         hover: { light: "{color.blue.700}", dark: "{color.blue.400}" },
         active: { light: "{color.blue.800}", dark: "{color.blue.600}" },
         disabled: { light: "{color.gray.300}", dark: "{color.gray.700}" },
