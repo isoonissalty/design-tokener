@@ -1,10 +1,14 @@
 # Design Token Builder
 
-Build a Tailwind theme from editable foundation, semantic, and component tokens. Preview the result in light and dark mode across seven interactive example layouts.
+Build Tailwind themes from editable foundation, semantic, and component tokens. Generate color palettes and dimension scales, then preview the result in light and dark mode across seven interactive layouts and an English and Thai typography preview.
 
-Generate palettes and dimension scales, save reusable themes in your browser, and export CSS, Tailwind configuration, JSON, or a DESIGN.md design contract.
+Save reusable themes in your browser and export CSS, Tailwind configuration, JSON, or a `DESIGN.md` design contract.
 
-[Contributing](CONTRIBUTING.md) · [MIT License](LICENSE) · [Report an issue](https://github.com/isoonissalty/design-tokener/issues)
+[Run locally](#run-locally) · [Theme workflow](#create-and-refine-a-theme) · [Contributing](CONTRIBUTING.md) · [MIT License](LICENSE) · [Report an issue](https://github.com/isoonissalty/design-tokener/issues)
+
+## Application screenshot
+
+![Design Token Builder with purple and teal palette swatches on the left and the themed Dashboard preview in dark mode on the right](docs/images/design-token-builder.png)
 
 ## Run locally
 
